@@ -1,0 +1,40 @@
+import type { Candidate } from "@/types/employer";
+
+export const mockCandidates: Candidate[] = [
+  {
+    id: "cand-1",
+    fullName: "Aisha Bello",
+    title: "Frontend Developer",
+    location: "Lagos, NG",
+    bio: "Frontend engineer focused on React and performance optimization for growth-stage products.",
+    yearsExperience: 4,
+    skills: ["React", "TypeScript", "Tailwind", "Next.js"],
+    expectedSalary: "$2,300 / month",
+    availability: "2 weeks",
+    education: "B.Sc. Computer Science, University of Lagos",
+  },
+  {
+    id: "cand-2",
+    fullName: "Daniel Okafor",
+    title: "Node.js Backend Engineer",
+    location: "Abuja, NG",
+    bio: "Backend engineer shipping API-first products with strong testing and observability practices.",
+    yearsExperience: 5,
+    skills: ["Node.js", "Express", "MongoDB", "Socket.io"],
+    expectedSalary: "$2,800 / month",
+    availability: "Immediate",
+    education: "B.Eng. Software Engineering, Babcock University",
+  },
+  {
+    id: "cand-3",
+    fullName: "Zainab Mohammed",
+    title: "Product Designer",
+    location: "Remote",
+    bio: "UI/UX designer blending product strategy with clean visual systems for B2B tools.",
+    yearsExperience: 3,
+    skills: ["Figma", "Design Systems", "Prototyping", "UX Research"],
+    expectedSalary: "$2,100 / month",
+    availability: "3 weeks",
+    education: "M.Sc. Human Computer Interaction",
+  },
+];

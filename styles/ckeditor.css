@@ -1,0 +1,130 @@
+/* CKEditor Custom Styles for WorkSwipe */
+
+/* Dark mode support */
+.dark .ck-editor__editable {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+.dark .ck-editor__editable:focus {
+  border-color: #3b82f6 !important;
+}
+
+.dark .ck-toolbar {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+.dark .ck-toolbar .ck-button {
+  color: #f1f5f9 !important;
+}
+
+.dark .ck-toolbar .ck-button:hover {
+  background-color: #334155 !important;
+}
+
+.dark .ck-toolbar .ck-button.ck-on {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+.dark .ck-content .ck-placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Better integration with our design system */
+.ck-editor__editable {
+  min-height: 200px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ck-editor__editable.ck-blurred {
+  border-color: #cbd5e1;
+}
+
+.ck-editor__editable.ck-focused {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* Toolbar styling */
+.ck-toolbar {
+  border-radius: 8px 8px 0 0;
+  border-bottom: none;
+}
+
+.ck-editor__editable {
+  border-radius: 0 0 8px 8px;
+  border-top: none;
+}
+
+/* Content styling */
+.ck-content h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin: 0.5em 0;
+}
+
+.ck-content h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin: 0.5em 0;
+}
+
+.ck-content h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 0.5em 0;
+}
+
+.ck-content ul,
+.ck-content ol {
+  margin: 1em 0;
+  padding-left: 2em;
+}
+
+.ck-content li {
+  margin: 0.25em 0;
+}
+
+.ck-content blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1em;
+  margin: 1em 0;
+  font-style: italic;
+  color: #64748b;
+}
+
+.dark .ck-content blockquote {
+  color: #94a3b8;
+}
+
+.ck-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.ck-content th,
+.ck-content td {
+  border: 1px solid #e2e8f0;
+  padding: 0.5em;
+  text-align: left;
+}
+
+.dark .ck-content th,
+.dark .ck-content td {
+  border-color: #475569;
+}
+
+.ck-content th {
+  background-color: #f8fafc;
+  font-weight: 600;
+}
+
+.dark .ck-content th {
+  background-color: #1e293b;
+}
