@@ -51,7 +51,7 @@ export function JobDetailsModal({ job, isOpen, onClose }: JobDetailsModalProps) 
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  Posted {formatDate(job.created_at)}
+                  Posted {formatDate(job.created_at || new Date().toISOString())}
                 </div>
               </div>
             </div>
