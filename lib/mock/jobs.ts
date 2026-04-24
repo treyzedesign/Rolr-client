@@ -1,88 +1,112 @@
-import type { Job } from "@/types/candidate";
+import type { Job } from "@/types/job";
 
 export const mockJobs: Job[] = [
   {
-    id: "job-1",
-    companyName: "TechCorp Solutions",
+    _id: "job-1",
     title: "Senior Frontend Developer",
     location: "Lagos, NG (Hybrid)",
     description: "We're looking for an experienced frontend developer to join our growing team and help build amazing user experiences for our enterprise clients.",
-    requirements: [
-      "5+ years of React experience",
-      "Strong TypeScript skills",
-      "Experience with Next.js",
-      "Knowledge of modern CSS frameworks",
-      "Portfolio of live projects"
-    ],
-    salaryRange: "$3,000 - $4,500 / month",
-    employmentType: "full_time",
-    industry: "Technology",
-    companySize: "50-200 employees",
-    postedDate: "2 days ago",
-    benefits: ["Health insurance", "Remote work", "Professional development", "Stock options"],
-    skills: ["React", "TypeScript", "Next.js", "Tailwind CSS", "GraphQL"]
+    job_type: "full_time",
+    experience_level: "senior",
+    required_skills: ["React", "TypeScript", "Next.js", "Tailwind CSS", "GraphQL"],
+    salary_min: 3000,
+    salary_max: 4500,
+    employer_id: {
+      _id: "emp-1",
+      email: "hr@techcorp.com",
+      profile: {
+        business_name: "TechCorp Solutions",
+        industry: "Technology",
+        phone: "+234-800-000-0001",
+        website_url: "https://techcorp.com",
+        bio: "Leading technology solutions company in West Africa"
+      }
+    },
+    employer_name: "TechCorp Solutions",
+    status: "active",
+    created_at: "2024-01-15T10:00:00Z",
+    applications_count: 12,
+    is_active: true
   },
   {
-    id: "job-2", 
-    companyName: "FinTech Africa",
+    _id: "job-2",
     title: "Backend Engineer",
     location: "Remote",
     description: "Join our backend team to build scalable financial systems that serve millions of users across Africa.",
-    requirements: [
-      "4+ years of Node.js experience",
-      "Strong database design skills",
-      "Experience with microservices",
-      "Knowledge of cloud platforms",
-      "Understanding of financial systems"
-    ],
-    salaryRange: "$2,800 - $4,000 / month",
-    employmentType: "full_time",
-    industry: "Financial Technology",
-    companySize: "100-500 employees",
-    postedDate: "1 week ago",
-    benefits: ["Flexible hours", "Remote first", "Wellness stipend", "Learning budget"],
-    skills: ["Node.js", "MongoDB", "AWS", "Docker", "REST APIs"]
+    job_type: "full_time",
+    experience_level: "mid",
+    required_skills: ["Node.js", "MongoDB", "AWS", "Docker", "REST APIs"],
+    salary_min: 2800,
+    salary_max: 4000,
+    employer_id: {
+      _id: "emp-2",
+      email: "careers@fintech.africa",
+      profile: {
+        business_name: "FinTech Africa",
+        industry: "Financial Technology",
+        phone: "+254-700-000-0002",
+        website_url: "https://fintech.africa",
+        bio: "Innovative financial technology platform serving African markets"
+      }
+    },
+    employer_name: "FinTech Africa",
+    status: "active",
+    created_at: "2024-01-10T14:30:00Z",
+    applications_count: 28,
+    is_active: true
   },
   {
-    id: "job-3",
-    companyName: "Design Studio Pro",
+    _id: "job-3",
     title: "Product Designer",
     location: "Nairobi, KE (On-site)",
     description: "We're seeking a talented product designer to help create beautiful and functional digital experiences for our clients.",
-    requirements: [
-      "3+ years of UX/UI design experience",
-      "Proficiency in Figma",
-      "Strong portfolio demonstrating process",
-      "Experience with design systems",
-      "Understanding of user research"
-    ],
-    salaryRange: "$2,200 - $3,200 / month",
-    employmentType: "full_time",
-    industry: "Design & Creative",
-    companySize: "10-50 employees",
-    postedDate: "3 days ago",
-    benefits: ["Creative environment", "Flexible schedule", "Design tools budget", "Team retreats"],
-    skills: ["Figma", "Design Systems", "User Research", "Prototyping", "Adobe Creative Suite"]
+    job_type: "full_time",
+    experience_level: "mid",
+    required_skills: ["Figma", "Design Systems", "User Research", "Prototyping", "Adobe Creative Suite"],
+    salary_min: 2200,
+    salary_max: 3200,
+    employer_id: {
+      _id: "emp-3",
+      email: "hello@designstudio.pro",
+      profile: {
+        business_name: "Design Studio Pro",
+        industry: "Design & Creative",
+        phone: "+254-200-000-0003",
+        website_url: "https://designstudio.pro",
+        bio: "Creative design agency specializing in digital experiences"
+      }
+    },
+    employer_name: "Design Studio Pro",
+    status: "active",
+    created_at: "2024-01-12T09:15:00Z",
+    applications_count: 15,
+    is_active: true
   },
   {
-    id: "job-4",
-    companyName: "E-commerce Giant",
+    _id: "job-4",
     title: "Full Stack Developer (Contract)",
     location: "Johannesburg, SA (Remote)",
     description: "Looking for a full stack developer to help scale our e-commerce platform during peak season.",
-    requirements: [
-      "4+ years full stack experience",
-      "Strong React and Node.js skills",
-      "E-commerce experience preferred",
-      "Ability to work independently",
-      "Good communication skills"
-    ],
-    salaryRange: "$3,500 - $4,200 / month",
-    employmentType: "contract",
-    industry: "E-commerce",
-    companySize: "500+ employees", 
-    postedDate: "5 days ago",
-    benefits: ["Hourly rate", "Flexible schedule", "Remote work", "Project bonuses"],
-    skills: ["React", "Node.js", "PostgreSQL", "Redis", "Docker"]
+    job_type: "contract",
+    experience_level: "mid",
+    required_skills: ["React", "Node.js", "PostgreSQL", "Redis", "Docker"],
+    salary_min: 3500,
+    salary_max: 4200,
+    employer_id: {
+      _id: "emp-4",
+      email: "jobs@ecommerce.co.za",
+      profile: {
+        business_name: "E-commerce Giant",
+        industry: "E-commerce",
+        phone: "+27-100-000-0004",
+        website_url: "https://ecommerce.co.za",
+        bio: "Leading e-commerce platform in Southern Africa"
+      }
+    },
+    employer_name: "E-commerce Giant",
+    status: "active",
+    created_at: "2024-01-08T16:45:00Z",
+    applications_count: 35,
+    is_active: true
   }
 ];

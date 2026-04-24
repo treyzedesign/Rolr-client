@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { JobSwipeBoard } from "@/components/candidate/JobSwipeBoard";
 import { mockJobs } from "@/lib/mock/jobs";
-import type { Job } from "@/types/candidate";
+import type { Job } from "@/types/job";
 
 export default function CandidateDashboard() {
   const [jobs, setJobs] = useState<Job[]>(mockJobs);
 
   const handleSwipe = (jobId: string, accepted: boolean) => {
-    setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+    setJobs(prevJobs => prevJobs.filter(job => job._id !== jobId));
     
     if (accepted) {
       console.log(`Applied to job: ${jobId}`);
