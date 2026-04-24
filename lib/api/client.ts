@@ -33,8 +33,20 @@ apiClient.interceptors.request.use(
 
 // Add response interceptor to handle auth errors
 apiClient.interceptors.response.use(
-  (response) => response,
+    (response) => {
+    // Log successful responses
+    console.log('Response Success:', {
+      url: response.config.url,
+      method: response.config.method,
+      status: response.status,
+      data: response.data,
+      headers: response.headers
+    });
+    return response;
+  },
   (error) => {
+    console.log(error);
+
     if (error.response?.status === 401) {
       // Clear auth cookies on 401 error
       const { clearAuthCookies } = require("@/lib/cookies");
@@ -44,7 +56,6 @@ apiClient.interceptors.response.use(
         window.location.href = '/login';
       }
     }
-    console.log(error);
     
     return Promise.reject(error);
   }

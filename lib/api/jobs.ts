@@ -6,6 +6,21 @@ export async function getAllJobs(): Promise<Job[]> {
   return data.jobs;
 }
 
+export async function getJobsWithFilter(
+  filter: "for_you" | "top" | "newest" = "for_you",
+  page: number = 1,
+  limit: number = 10
+): Promise<Job[]> {
+  const { data } = await apiClient.get<JobsResponse>("/jobs", {
+    params: {
+      filter,
+      page,
+      limit
+    }
+  });
+  return data.jobs;
+}
+
 export async function getJobById(jobId: string): Promise<Job> {
   const { data } = await apiClient.get<JobResponse>(`/jobs/${jobId}`);
   return data.job;

@@ -25,6 +25,8 @@ export interface CandidateProfile {
   certifications?: string[];
   references_available?: boolean;
   video_intro_url?: string;
+  voice_intro_url?: string;
+  audio_url?: string;
   created_at?: string;
   updated_at?: string;
 }

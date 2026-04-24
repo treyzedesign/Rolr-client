@@ -33,6 +33,16 @@ export default function EmployerRegisterPage() {
   const router = useRouter();
   const { registerEmployer, isLoading, error } = useAuthStore();
   const [currentStep, setCurrentStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState({
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSymbol: false,
+    isValidLength: false,
+    passwordsMatch: false
+  });
   const [formData, setFormData] = useState<EmployerRegisterForm>({
     email: "",
     password: "",
@@ -49,6 +59,21 @@ export default function EmployerRegisterPage() {
 
   const handleInputChange = (field: keyof EmployerRegisterForm, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Real-time password validation
+    if (field === 'password' || field === 'confirmPassword') {
+      const password = field === 'password' ? value : formData.password;
+      const confirmPassword = field === 'confirmPassword' ? value : formData.confirmPassword;
+      
+      setPasswordValidation({
+        hasUppercase: /[A-Z]/.test(password),
+        hasLowercase: /[a-z]/.test(password),
+        hasNumber: /[0-9]/.test(password),
+        hasSymbol: /[^A-Za-z0-9]/.test(password),
+        isValidLength: password.length >= 8,
+        passwordsMatch: password === confirmPassword && password.length > 0
+      });
+    }
   };
 
   const validateStep1 = () => {
@@ -58,6 +83,19 @@ export default function EmployerRegisterPage() {
     if (!formData.email.trim()) {
       return "Email is required";
     }
+    
+    // Enhanced email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      return "Please enter a valid email address";
+    }
+    
+    // Additional checks for common invalid emails
+    const email = formData.email.trim().toLowerCase();
+    if (email.startsWith('.') || email.startsWith('_') || email.endsWith('.')) {
+      return "Please enter a valid email address";
+    }
+    
     if (!formData.password.trim()) {
       return "Password is required";
     }
@@ -75,6 +113,32 @@ export default function EmployerRegisterPage() {
       return "Industry is required";
     }
     return null;
+  };
+
+  // Check if step 1 is complete (for button state)
+  const isStep1Complete = () => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const email = formData.email.trim().toLowerCase();
+    
+    return (
+      formData.business_name.trim() &&
+      formData.email.trim() &&
+      emailRegex.test(formData.email.trim()) &&
+      !email.startsWith('.') && !email.startsWith('_') && !email.endsWith('.') &&
+      formData.password.trim() &&
+      formData.password.length >= 8 &&
+      /[A-Z]/.test(formData.password) && // hasUppercase
+      /[a-z]/.test(formData.password) && // hasLowercase
+      /[0-9]/.test(formData.password) && // hasNumber
+      /[^A-Za-z0-9]/.test(formData.password) && // hasSymbol
+      formData.confirmPassword.trim() &&
+      formData.password === formData.confirmPassword
+    );
+  };
+
+  // Check if step 2 is complete (for button state)
+  const isStep2Complete = () => {
+    return formData.industry.trim();
   };
 
   const handleNextStep = () => {
@@ -114,7 +178,7 @@ export default function EmployerRegisterPage() {
       });
       toast.success("Registration successful! Please check your email for verification.");
       router.push("/login");
-    } catch {
+    } catch (error) {
       // Store handles error state.
     }
   };
@@ -218,27 +282,127 @@ export default function EmployerRegisterPage() {
 
             <label className="block">
               <span className="mb-1 block text-sm text-slate-300">Password</span>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                required
-                placeholder="Create a strong password"
-                minLength={8}
-                className="w-full rounded-xl border border-blue-100 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-300 transition focus:ring"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  required
+                  placeholder="Create a strong password"
+                  minLength={8}
+                  className="w-full rounded-xl border border-blue-100 bg-white px-4 py-3 pr-12 text-slate-900 outline-none ring-blue-300 transition focus:ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                >
+                  {showPassword ? (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              
+              {/* Password Requirements */}
+              {formData.password && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center text-xs">
+                    <span className={`mr-2 ${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'}`}>
+                      {passwordValidation.hasUppercase ? '✓' : '○'}
+                    </span>
+                    <span className={passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-500'}>
+                      At least one uppercase letter
+                    </span>
+                  </div>
+                  <div className="flex items-center text-xs">
+                    <span className={`mr-2 ${passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-400'}`}>
+                      {passwordValidation.hasLowercase ? '✓' : '○'}
+                    </span>
+                    <span className={passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-500'}>
+                      At least one lowercase letter
+                    </span>
+                  </div>
+                  <div className="flex items-center text-xs">
+                    <span className={`mr-2 ${passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-400'}`}>
+                      {passwordValidation.hasNumber ? '✓' : '○'}
+                    </span>
+                    <span className={passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-500'}>
+                      At least one number
+                    </span>
+                  </div>
+                  <div className="flex items-center text-xs">
+                    <span className={`mr-2 ${passwordValidation.hasSymbol ? 'text-green-600' : 'text-gray-400'}`}>
+                      {passwordValidation.hasSymbol ? '✓' : '○'}
+                    </span>
+                    <span className={passwordValidation.hasSymbol ? 'text-green-600' : 'text-gray-500'}>
+                      At least one symbol
+                    </span>
+                  </div>
+                  <div className="flex items-center text-xs">
+                    <span className={`mr-2 ${passwordValidation.isValidLength ? 'text-green-600' : 'text-gray-400'}`}>
+                      {passwordValidation.isValidLength ? '✓' : '○'}
+                    </span>
+                    <span className={passwordValidation.isValidLength ? 'text-green-600' : 'text-gray-500'}>
+                      At least 8 characters
+                    </span>
+                  </div>
+                </div>
+              )}
             </label>
 
             <label className="block">
               <span className="mb-1 block text-sm text-slate-300">Confirm password</span>
-              <input
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                required
-                placeholder="Confirm your password"
-                className="w-full rounded-xl border border-blue-100 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-300 transition focus:ring"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                  required
+                  placeholder="Confirm your password"
+                  className={`w-full rounded-xl border px-4 py-3 pr-12 text-slate-900 outline-none ring-blue-300 transition focus:ring ${
+                    formData.confirmPassword && !passwordValidation.passwordsMatch
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-blue-100 bg-white'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                >
+                  {showConfirmPassword ? (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              
+              {/* Password Match Validation */}
+              {formData.confirmPassword && (
+                <div className="mt-1">
+                  <div className="flex items-center text-xs">
+                    <span className={`mr-2 ${passwordValidation.passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
+                      {passwordValidation.passwordsMatch ? '✓' : '✗'}
+                    </span>
+                    <span className={passwordValidation.passwordsMatch ? 'text-green-600' : 'text-red-600'}>
+                      {passwordValidation.passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </label>
           </div>
         )}
@@ -369,7 +533,7 @@ export default function EmployerRegisterPage() {
           <button
             type={currentStep === 1 ? "button" : "submit"}
             onClick={currentStep === 1 ? handleNextStep : undefined}
-            disabled={isLoading}
+            disabled={isLoading || (currentStep === 1 ? !isStep1Complete() : !isStep2Complete())}
             className="glow-ring flex-1 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? "Creating account..." : currentStep === 1 ? "Next Step" : "Create account"}

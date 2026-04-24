@@ -53,3 +53,15 @@ export async function uploadProfileImage(file: File): Promise<UploadImageRespons
   return response.data;
 }
 
+export interface VoicePromptResponse {
+  message: string;
+  prompt: string;
+  word_count: number;
+  estimated_duration_seconds: number;
+}
+
+export async function generateVoicePrompt(): Promise<VoicePromptResponse> {
+  const { data } = await apiClient.get<VoicePromptResponse>("/profile/generate-voice-prompt");
+  return data;
+}
+

@@ -8,13 +8,25 @@ export interface Job {
   required_skills?: string[];
   salary_min?: number;
   salary_max?: number;
-  employer_id: string;
+  employer_id: {
+    _id: string;
+    email: string;
+    profile: {
+      bio?: string;
+      business_name?: string;
+      industry?: string;
+      phone?: string;
+      profile_image_url?: string;
+      website_url?: string;
+    };
+  };
   employer_name?: string;
   employer_logo?: string;
   status?: "active" | "closed" | "draft";
   created_at?: string;
   updated_at?: string;
   applications_count?: number;
+  is_active?: boolean;
 }
 
 export interface CreateJobRequest {

@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import toast from "react-hot-toast";
 import { loginUser, registerJobSeeker, getCurrentUser, verifyEmail, resendOtp } from "@/lib/api/auth";
-import { registerEmployer, } from "@/lib/api/auth";
+import { registerEmployer } from "@/lib/api/auth";
 import type { EmployerRegisterRequest, JobSeekerRegisterRequest, LoginRequest, VerifyEmailRequest, ResendOtpRequest } from "@/types/auth";
 import type { AuthUser } from "@/types/auth";
 import { 
@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthState>()(
             user: response.user,
             isLoading: false,
           });
-        } catch {
+        } catch (error) {
           toast.error("Unable to sign in. Check your credentials.");
           set({ isLoading: false });
           throw new Error("LOGIN_FAILED");
@@ -66,8 +66,8 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           // Registration successful, redirect to OTP verification
           window.location.href = `/verify-otp?email=${encodeURIComponent(payload.email)}`;
-        } catch {
-          toast.error("Unable to create employer account right now.");
+        } catch (error:any) {
+          toast.error(error.response.data.message);
           set({ isLoading: false });
           throw new Error("REGISTER_FAILED");
         }
@@ -79,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           // Registration successful, redirect to OTP verification
           window.location.href = `/verify-otp?email=${encodeURIComponent(payload.email)}`;
-        } catch {
+        } catch (error) {
           toast.error("Unable to create job seeker account right now.");
           set({ isLoading: false });
           throw new Error("REGISTER_FAILED");
@@ -99,7 +99,7 @@ export const useAuthStore = create<AuthState>()(
             user: response.user,
             isLoading: false,
           });
-        } catch {
+        } catch (error) {
           toast.error("Invalid or expired OTP. Please try again.");
           set({ isLoading: false });
           throw new Error("VERIFY_FAILED");
@@ -110,7 +110,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           await resendOtp(payload);
           set({ isLoading: false });
-        } catch {
+        } catch (error) {
           toast.error("Unable to resend OTP. Please try again.");
           set({ isLoading: false });
           throw new Error("RESEND_FAILED");
@@ -141,7 +141,7 @@ export const useAuthStore = create<AuthState>()(
           setUserData(user);
           set({ user });
           return user;
-        } catch {
+        } catch (error) {
           clearAuthCookies();
           set({ token: null, user: null });
           return null;

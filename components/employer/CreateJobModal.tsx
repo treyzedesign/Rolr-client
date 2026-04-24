@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useJobStore } from "@/stores/job-store";
-import { X, Plus, Trash2, Loader2 } from "lucide-react";
+import { X, Trash2, Loader2 } from "lucide-react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import "@/styles/ckeditor.css";
@@ -127,14 +127,9 @@ export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const skillsArray = skillsInput
-      .split(",")
-      .map(skill => skill.trim())
-      .filter(Boolean);
-
     const jobData = {
       ...formData,
-      required_skills: skillsArray,
+      required_skills: formData.required_skills || [],
     };
 
     try {
@@ -172,8 +167,8 @@ export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalPro
 
   return (
     <div className="fixed inset-0 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 border-2 border-blue-600 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+      <div className="bg-white dark:bg-slate-800 border-2 border-blue-600 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-auto overscroll-contain">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 overflow-y">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
             {jobToEdit ? "Edit Job" : "Create New Job"}
           </h2>
@@ -347,35 +342,27 @@ export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalPro
                   Required Skills
                 </label>
                 <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <select
-                      value={skillsInput}
-                      onChange={(e) => setSkillsInput(e.target.value)}
-                      className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Select a skill...</option>
-                      {COMMON_SKILLS.map((skill) => (
-                        <option key={skill} value={skill}>
-                          {skill}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (skillsInput.trim()) {
-                          const currentSkills = formData.required_skills || [];
-                          if (!currentSkills.includes(skillsInput.trim())) {
-                            handleInputChange("required_skills", [...currentSkills, skillsInput.trim()]);
-                          }
-                          setSkillsInput("");
+                  <select
+                    value={skillsInput}
+                    onChange={(e) => {
+                      const selectedSkill = e.target.value;
+                      if (selectedSkill.trim()) {
+                        const currentSkills = formData.required_skills || [];
+                        if (!currentSkills.includes(selectedSkill.trim())) {
+                          handleInputChange("required_skills", [...currentSkills, selectedSkill.trim()]);
                         }
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
+                      }
+                      setSkillsInput("");
+                    }}
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select a skill...</option>
+                    {COMMON_SKILLS.map((skill) => (
+                      <option key={skill} value={skill}>
+                        {skill}
+                      </option>
+                    ))}
+                  </select>
 
                   {/* Skills Tags */}
                   {(formData.required_skills || []).length > 0 && (
