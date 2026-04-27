@@ -53,8 +53,9 @@ export const useAuthStore = create<AuthState>()(
             user: response.user,
             isLoading: false,
           });
-        } catch (error) {
-          toast.error("Unable to sign in. Check your credentials.");
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message ;
+          toast.error(errorMessage);
           set({ isLoading: false });
           throw new Error("LOGIN_FAILED");
         }
@@ -66,8 +67,9 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           // Registration successful, redirect to OTP verification
           window.location.href = `/verify-otp?email=${encodeURIComponent(payload.email)}`;
-        } catch (error:any) {
-          toast.error(error.response.data.message);
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message;
+          toast.error(errorMessage);
           set({ isLoading: false });
           throw new Error("REGISTER_FAILED");
         }
@@ -79,8 +81,11 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           // Registration successful, redirect to OTP verification
           window.location.href = `/verify-otp?email=${encodeURIComponent(payload.email)}`;
-        } catch (error) {
-          toast.error("Unable to create job seeker account right now.");
+        } catch (error: any) {
+          console.log(error.response?.data?.message);
+          
+          const errorMessage = error.response?.data?.message;
+          toast.error(errorMessage);
           set({ isLoading: false });
           throw new Error("REGISTER_FAILED");
         }
@@ -99,8 +104,9 @@ export const useAuthStore = create<AuthState>()(
             user: response.user,
             isLoading: false,
           });
-        } catch (error) {
-          toast.error("Invalid or expired OTP. Please try again.");
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || "Invalid or expired OTP. Please try again.";
+          toast.error(errorMessage);
           set({ isLoading: false });
           throw new Error("VERIFY_FAILED");
         }
@@ -110,8 +116,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           await resendOtp(payload);
           set({ isLoading: false });
-        } catch (error) {
-          toast.error("Unable to resend OTP. Please try again.");
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || "Unable to resend OTP. Please try again.";
+          toast.error(errorMessage);
           set({ isLoading: false });
           throw new Error("RESEND_FAILED");
         }

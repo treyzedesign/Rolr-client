@@ -19,6 +19,7 @@ export const mockJobs: Job[] = [
         industry: "Technology",
         phone: "+234-800-000-0001",
         website_url: "https://techcorp.com",
+        profile_image_url: null,
         bio: "Leading technology solutions company in West Africa"
       }
     },
@@ -46,6 +47,7 @@ export const mockJobs: Job[] = [
         industry: "Financial Technology",
         phone: "+254-700-000-0002",
         website_url: "https://fintech.africa",
+        profile_image_url: null,
         bio: "Innovative financial technology platform serving African markets"
       }
     },
@@ -73,6 +75,7 @@ export const mockJobs: Job[] = [
         industry: "Design & Creative",
         phone: "+254-200-000-0003",
         website_url: "https://designstudio.pro",
+        profile_image_url: null,
         bio: "Creative design agency specializing in digital experiences"
       }
     },
@@ -100,6 +103,7 @@ export const mockJobs: Job[] = [
         industry: "E-commerce",
         phone: "+27-100-000-0004",
         website_url: "https://ecommerce.co.za",
+        profile_image_url: null,
         bio: "Leading e-commerce platform in Southern Africa"
       }
     },

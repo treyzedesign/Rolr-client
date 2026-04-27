@@ -54,21 +54,24 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
     setIsSwiping(true);
     
     try {
-      // Animate card out immediately
+      // Animate card out immediately - faster transition
       await controls.start({
         x: accepted ? 300 : -300,
         rotate: accepted ? 30 : -30,
         opacity: 0,
-        transition: { type: "spring", stiffness: 400, damping: 25 }
+        transition: { type: "spring", stiffness: 600, damping: 20 }
       });
       
       // Notify parent component immediately to show next card
       onSwipe(topJob._id, accepted);
       
-      // Call API in background
+      // Call API in background without blocking UI
       await swipeJob({
         job_id: topJob._id,
         action: accepted ? "right" : "left"
+      }).catch(error => {
+        console.error("Swipe failed:", error);
+        // Could add toast notification here if needed
       });
       
       // Reset animation controls for next card
@@ -80,9 +83,7 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
       });
       
     } catch (error) {
-      console.error("Swipe failed:", error);
-      // If API fails, we could add error notification here
-      // but the card already moved to next one
+      console.error("Animation failed:", error);
     } finally {
       setIsSwiping(false);
     }

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { X, Menu, Briefcase, User, Search, FileText, Settings, Home } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth-store";
+import { X, Menu, Briefcase, User, Search, FileText, Settings, Home, LogOut } from "lucide-react";
 
 const candidateNavItems = [
   { href: "/candidate", label: "Dashboard", icon: Home },
@@ -18,6 +20,16 @@ interface JobSeekerSidebarProps {
 }
 
 export function JobSeekerSidebar({ isMobileMenuOpen, onMobileMenuClose }: JobSeekerSidebarProps) {
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    console.log("Logout button clicked");
+    logout();
+    router.push("/login");
+    onMobileMenuClose();
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -49,27 +61,56 @@ export function JobSeekerSidebar({ isMobileMenuOpen, onMobileMenuClose }: JobSee
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 h-screen overflow-y-auto">
-          <h3 className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Job Seeker Portal
-          </h3>
-          <ul className="space-y-1">
-            {candidateNavItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onMobileMenuClose}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+        <nav className="flex flex-col h-full">
+          <div className="p-4 pb-0 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+            <h3 className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Job Seeker Portal
+            </h3>
+            <ul className="space-y-1 pb-4">
+              {candidateNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onMobileMenuClose}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Sign out section - Mobile only */}
+          <div className="flex-shrink-0 bottom-0 absolute border-b border-blue-100 dark:border-slate-800 p-4 md:hidden">
+            <div className="mb-3 px-3">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Signed in as
+              </p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 truncate">
+                {user?.fullName || user?.email || "User"}
+              </p>
+            </div>
+            <div
+              onClick={handleLogout}
+              className="relative z-10 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 cursor-pointer select-none"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleLogout();
+                }
+              }}
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </div>
+          </div>
         </nav>
       </aside>
     </>
