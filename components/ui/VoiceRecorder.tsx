@@ -16,6 +16,13 @@ export function VoiceRecorder({ onRecordingComplete, existingVoiceUrl, isUploadi
   const [audioUrl, setAudioUrl] = useState<string | null>(existingVoiceUrl || null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  // Detect iOS on mount
+  useEffect(() => {
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    setIsIOS(ios);
+  }, []);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -42,11 +49,58 @@ export function VoiceRecorder({ onRecordingComplete, existingVoiceUrl, isUploadi
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Your browser does not support audio recording. Please try a different browser.');
+        return;
+      }
+
+      // iOS specific: Check if we're in iOS and handle permissions differently
+      if (isIOS) {
+        // iOS requires user gesture first
+        alert('iOS requires you to tap the "Start Recording" button first, then allow microphone access when prompted.');
+      }
+      
+      let stream: MediaStream;
+      if (isIOS) {
+        // iOS requires specific constraints and may need user gesture
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            } 
+          });
+        } catch (iosError) {
+          console.error('iOS microphone access error:', iosError);
+          // Fallback for iOS - try with basic constraints
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch (fallbackError) {
+            throw fallbackError;
+          }
+        }
+      } else {
+        // Standard browser handling
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+
       streamRef.current = stream;
       setPermissionGranted(true);
 
-      const mediaRecorder = new MediaRecorder(stream);
+      // Create MediaRecorder with iOS compatibility
+      let mediaRecorder: MediaRecorder;
+      const mimeType = isIOS ? 'audio/mp4' : 'audio/webm';
+      const options = isIOS ? { mimeType } : {};
+      
+      try {
+        mediaRecorder = new MediaRecorder(stream, options);
+      } catch (recorderError) {
+        // Fallback to default constructor
+        mediaRecorder = new MediaRecorder(stream);
+      }
+      
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -57,23 +111,42 @@ export function VoiceRecorder({ onRecordingComplete, existingVoiceUrl, isUploadi
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { 
+          type: isIOS ? 'audio/mp4' : 'audio/webm' 
+        });
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
         onRecordingComplete?.(audioBlob);
       };
 
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
+      // Start recording with error handling
+      try {
+        mediaRecorder.start();
+        setIsRecording(true);
+        setRecordingTime(0);
 
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
+        timerRef.current = setInterval(() => {
+          setRecordingTime(prev => prev + 1);
+        }, 1000);
+      } catch (startError) {
+        console.error('Error starting recording:', startError);
+        // Clean up on error
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+        setPermissionGranted(false);
+        alert('Failed to start recording. Please try again.');
+      }
     } catch (error) {
       console.error('Error accessing microphone:', error);
       setPermissionGranted(false);
-      alert('Please allow microphone access to record your voice introduction.');
+      
+      // More detailed error message for iOS
+      if (isIOS) {
+        alert('To enable microphone on iOS: \n1. Use Safari browser\n2. Allow microphone access when prompted\n3. Make sure your device is not in silent mode');
+      } else {
+        alert('Please allow microphone access to record your voice introduction.');
+      }
     }
   };
 
@@ -141,11 +214,16 @@ export function VoiceRecorder({ onRecordingComplete, existingVoiceUrl, isUploadi
         {!isRecording ? (
           <button
             onClick={startRecording}
-            disabled={isUploading}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isUploading || isIOS}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              isIOS 
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                : 'bg-red-600 text-white hover:bg-red-700'
+            } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={isIOS ? 'Tap to start recording (iOS requires user interaction)' : 'Start recording'}
           >
             <Mic className="w-4 h-4" />
-            Record
+            {isIOS ? 'Tap to Start' : 'Record'}
           </button>
         ) : (
           <>
@@ -226,6 +304,12 @@ export function VoiceRecorder({ onRecordingComplete, existingVoiceUrl, isUploadi
             <li>Speak clearly and mention your key skills</li>
             <li>Find a quiet environment with minimal background noise</li>
             <li>Allow microphone access when prompted</li>
+            {isIOS && (
+              <>
+                <li className="font-semibold text-blue-600">iOS Users: Use Safari browser for best compatibility</li>
+                <li className="font-semibold text-blue-600">Tap the recording button first, then allow microphone access</li>
+              </>
+            )}
           </ul>
         </div>
       )}
