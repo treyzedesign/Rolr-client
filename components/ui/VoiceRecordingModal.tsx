@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Mic, Square, Pause, Play, RotateCcw, Loader2 } from "lucide-react";
-import { AudioEqualizer } from "@/components/ui/AudioEqualizer";
+import { Mic, Square, Play, Pause, X, Loader2, Volume2, RotateCcw } from "lucide-react";
 import { generateSpeakingPrompt } from "@/lib/ai/gemini";
+import { AudioEqualizer } from "@/components/ui/AudioEqualizer";
 
 interface VoiceRecordingModalProps {
   isOpen: boolean;
@@ -35,16 +35,16 @@ export function VoiceRecordingModal({
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [permissionGranted, setPermissionGranted] = useState(false);
-  const [currentPrompt, setCurrentPrompt] = useState("");
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
-  const [wordCount, setWordCount] = useState<number | null>(null);
-  const [estimatedDuration, setEstimatedDuration] = useState<number | null>(null);
+  const [currentPrompt, setCurrentPrompt] = useState("");
+  const [wordCount, setWordCount] = useState(0);
+  const [estimatedDuration, setEstimatedDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -62,8 +62,29 @@ export function VoiceRecordingModal({
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.src = '';
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audio.addEventListener('ended', () => {
+        setIsPlaying(false);
+      });
+      setAudioElement(audio);
+    }
+    
+    return () => {
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.src = '';
+      }
+    };
+  }, [audioUrl]);
 
   const generateRandomPrompt = async () => {
     setIsGeneratingPrompt(true);
@@ -86,12 +107,75 @@ export function VoiceRecordingModal({
   };
 
   const startRecording = async () => {
+    // iOS specific: Check if we're in iOS and handle permissions differently
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      setPermissionGranted(true);
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Your browser does not support audio recording. Please try a different browser.');
+        return;
+      }
+      
+      let stream: MediaStream;
+      if (isIOS) {
+        // iOS requires specific constraints and may need user gesture
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            } 
+          });
+        } catch (iosError) {
+          console.error('iOS microphone access error:', iosError);
+          // Fallback for iOS - try with basic constraints
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch (fallbackError) {
+            throw fallbackError;
+          }
+        }
+      } else {
+        // Standard browser handling
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
 
-      const mediaRecorder = new MediaRecorder(stream);
+      streamRef.current = stream;
+
+      // Create MediaRecorder with iOS compatibility
+      let mediaRecorder: MediaRecorder;
+      let mimeType = 'audio/webm'; // Default fallback
+      
+      // Try to find the best supported MIME type
+      const possibleTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/mpeg',
+        'audio/ogg'
+      ];
+      
+      for (const type of possibleTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          break;
+        }
+      }
+      
+      console.log('Using MIME type:', mimeType);
+      
+      const options = mimeType ? { mimeType } : undefined;
+      
+      try {
+        mediaRecorder = new MediaRecorder(stream, options);
+      } catch (recorderError) {
+        console.error('MediaRecorder creation error:', recorderError);
+        // Fallback to default constructor
+        mediaRecorder = new MediaRecorder(stream);
+      }
+      
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -102,23 +186,50 @@ export function VoiceRecordingModal({
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        // Create blob with the actual recorded MIME type
+        // For iOS compatibility, we'll convert to mpeg later if needed
+        const recordedMimeType = mediaRecorder.mimeType || 'audio/webm';
+        let audioBlob: Blob;
+        
+        if (isIOS && recordedMimeType.includes('webm')) {
+          // For iOS, try to create as mpeg format blob for better compatibility
+          audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mpeg' });
+        } else {
+          // Use the recorded format
+          audioBlob = new Blob(audioChunksRef.current, { type: recordedMimeType });
+        }
+        
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
         // Don't auto-save, let user review and save manually
       };
 
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
+      // Start recording with error handling
+      try {
+        mediaRecorder.start();
+        setIsRecording(true);
+        setRecordingTime(0);
 
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
+        timerRef.current = setInterval(() => {
+          setRecordingTime(prev => prev + 1);
+        }, 1000);
+      } catch (startError) {
+        console.error('Error starting recording:', startError);
+        // Clean up on error
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+        alert('Failed to start recording. Please try again.');
+      }
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      setPermissionGranted(false);
-      alert('Please allow microphone access to record your voice introduction.');
+      
+      // More detailed error message for iOS
+      if (isIOS) {
+        alert('To enable microphone on iOS: \n1. Use Safari browser\n2. Allow microphone access when prompted\n3. Make sure your device is not in silent mode');
+      } else {
+        alert('Please allow microphone access to record your voice introduction.');
+      }
     }
   };
 
@@ -156,34 +267,70 @@ export function VoiceRecordingModal({
   };
 
   const deleteRecording = () => {
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.src = '';
+    }
+    setAudioElement(null);
     setAudioUrl(null);
     setRecordingTime(0);
     audioChunksRef.current = [];
+    setIsPlaying(false);
   };
 
-  const togglePlayback = () => {
-    if (!audioRef.current || !audioUrl) return;
-
+  const togglePlayPause = () => {
+    if (!audioElement) return;
+    
     if (isPlaying) {
-      audioRef.current.pause();
+      audioElement.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play();
+      audioElement.play();
       setIsPlaying(true);
     }
   };
 
+  
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSave = () => {
-    if (audioUrl && audioChunksRef.current.length > 0) {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      onRecordingComplete(audioBlob);
+  const handleSave = async () => {
+    if (!audioUrl || audioChunksRef.current.length === 0) return;
+    
+    setIsSaving(true);
+    
+    // Stop the audio if it's playing
+    if (audioElement) {
+      audioElement.pause();
+      setIsPlaying(false);
+    }
+    
+    try {
+      // Create blob with appropriate MIME type for iOS compatibility
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      let audioBlob: Blob;
+      
+      if (isIOS) {
+        // For iOS, create as mpeg format for better compatibility
+        audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mpeg' });
+      } else {
+        // For other browsers, use the original format
+        audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      }
+      
+      // Wait for the API response
+      await onRecordingComplete(audioBlob);
+      
+      // Only close the modal after successful save
       onClose();
+    } catch (error) {
+      console.error('Error saving recording:', error);
+      // You could show an error message here if needed
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -319,21 +466,20 @@ export function VoiceRecordingModal({
             )}
 
             {audioUrl && !isRecording && (
-              <>
+              <div className="flex items-center justify-center gap-3">
                 <button
-                  onClick={togglePlayback}
-                  className="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                  onClick={togglePlayPause}
+                  className="flex items-center gap-3 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
                 >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  {isPlaying ? 'Pause' : 'Play'}
+                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                 </button>
                 <button
                   onClick={deleteRecording}
-                  className="flex items-center gap-2 px-4 py-3 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors"
+                  className="flex items-center gap-2 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
-              </>
+              </div>
             )}
           </div>
 
@@ -359,22 +505,19 @@ export function VoiceRecordingModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={!audioUrl}
-            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!audioUrl || isSaving}
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            Save Recording
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Recording'
+            )}
           </button>
         </div>
-
-        {/* Hidden Audio Player */}
-        {audioUrl && (
-          <audio
-            ref={audioRef}
-            src={audioUrl}
-            onEnded={() => setIsPlaying(false)}
-            className="hidden"
-          />
-        )}
       </div>
     </div>
   );
