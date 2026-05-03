@@ -115,3 +115,41 @@ export interface ApplicationsResponse {
 export interface ApplicationResponse {
   application: Application;
 }
+
+export interface JobApplicant {
+  _id: string;
+  job_seeker_id: {
+    _id: string;
+    email: string;
+    profile: {
+      first_name?: string;
+      last_name?: string;
+      employment_status?: string;
+      experience_level?: string;
+      job_category?: string;
+      location?: string;
+      phone?: string;
+      profile_image_url?: string;
+      voice_intro_url?: string;
+      bio?: string;
+      skills: string[]
+    };
+  };
+  job_id: {
+    _id: string;
+    title: string;
+    location: string;
+  };
+  status: "all" | "pending" | "submitted" | "approved" | "rejected";
+  created_at: string;
+}
+
+export interface JobApplicantsResponse {
+  applicants: JobApplicant[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}

@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api/client";
-import type { EmployerRegisterRequest,AuthResponse, JobSeekerRegisterRequest, LoginRequest, VerifyEmailRequest, VerifyEmailResponse, ResendOtpRequest, ResendOtpResponse } from "@/types/auth";
+import type { EmployerRegisterRequest,AuthResponse, JobSeekerRegisterRequest, LoginRequest, VerifyEmailRequest, VerifyEmailResponse, ResendOtpRequest, ResendOtpResponse, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse, ChangePasswordRequest, ChangePasswordResponse } from "@/types/auth";
 
 export async function registerJobSeeker(payload: JobSeekerRegisterRequest) {
   const { data } = await apiClient.post<AuthResponse>("/auth/register/job-seeker", payload);
@@ -28,5 +28,20 @@ export async function verifyEmail(payload: VerifyEmailRequest) {
 
 export async function resendOtp(payload: ResendOtpRequest) {
   const { data } = await apiClient.post<ResendOtpResponse>("/auth/resend-otp", payload);
+  return data;
+}
+
+export async function forgotPassword(payload: ForgotPasswordRequest) {
+  const { data } = await apiClient.post<ForgotPasswordResponse>("/auth/forgot-password", payload);
+  return data;
+}
+
+export async function resetPassword(payload: ResetPasswordRequest) {
+  const { data } = await apiClient.post<ResetPasswordResponse>("/auth/reset-password", payload);
+  return data;
+}
+
+export async function changePassword(payload: ChangePasswordRequest) {
+  const { data } = await apiClient.put<ChangePasswordResponse>("/auth/update-password", payload);
   return data;
 }

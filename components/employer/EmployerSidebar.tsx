@@ -4,15 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
-import { X, Menu, Users, UserCheck, Briefcase, Settings, Home, FileText, LogOut } from "lucide-react";
+import { X, Menu, Users, UserCheck, Briefcase, Settings, Home, FileText, LogOut, ChevronDown, Heart, Video } from "lucide-react";
 
 const employerNavItems = [
   { href: "/employer", label: "Dashboard", icon: Home },
   { href: "/employer/jobs", label: "Job Management", icon: FileText },
   { href: "/employer/profile", label: "Company Profile", icon: Briefcase },
   { href: "/employer/discover", label: "Discover Candidates", icon: Users },
-  { href: "/employer/candidates", label: "My Candidates", icon: UserCheck },
-  { href: "/employer/settings", label: "Settings", icon: Settings },
 ];
 
 interface EmployerSidebarProps {
@@ -23,6 +21,7 @@ interface EmployerSidebarProps {
 export function EmployerSidebar({ isMobileMenuOpen, onMobileMenuClose }: EmployerSidebarProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [applicantsDropdownOpen, setApplicantsDropdownOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -44,7 +43,7 @@ export function EmployerSidebar({ isMobileMenuOpen, onMobileMenuClose }: Employe
       <aside className={`
         fixed top-0 bottom-0 left-0 z-50 h-full w-64 transform border-r border-blue-100 bg-white dark:border-slate-800 dark:bg-slate-950
         transition-transform duration-300 ease-in-out
-        md:relative md:z-auto md:translate-x-0
+        md:sticky md:top-16 md:z-auto md:h-[calc(100vh-4rem)] md:translate-x-0
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
         {/* Mobile close button */}
@@ -62,7 +61,7 @@ export function EmployerSidebar({ isMobileMenuOpen, onMobileMenuClose }: Employe
 
         {/* Navigation */}
         <nav className="flex flex-col h-full">
-          <div className="p-4 pb-0 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+          <div className="p-4 pb-0 overflow-y-auto h-full" >
             <h3 className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Employer Portal
             </h3>
@@ -82,6 +81,73 @@ export function EmployerSidebar({ isMobileMenuOpen, onMobileMenuClose }: Employe
                   </li>
                 );
               })}
+              
+              {/* Applicants Dropdown */}
+              <li>
+                <div className="relative">
+                  <button
+                    onClick={() => setApplicantsDropdownOpen(!applicantsDropdownOpen)}
+                    className="flex items-center justify-between w-full gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
+                  >
+                    <div className="flex items-center gap-3">
+                      <UserCheck className="h-4 w-4" />
+                      <span>Candidates</span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${applicantsDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {applicantsDropdownOpen && (
+                    <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-slate-950 rounded-lg border border-blue-100 dark:border-slate-800 shadow-lg z-10">
+                      <Link
+                        href="/employer/applicants"
+                        onClick={() => {
+                          onMobileMenuClose();
+                          setApplicantsDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
+                      >
+                        <UserCheck className="h-4 w-4" />
+                        My Applicants
+                      </Link>
+                      <Link
+                        href="/employer/matches"
+                        onClick={() => {
+                          onMobileMenuClose();
+                          setApplicantsDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
+                      >
+                        <Heart className="h-4 w-4" />
+                        My Matches
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </li>
+
+              {/* Interviews */}
+              <li>
+                <Link
+                  href="/employer/interviews"
+                  onClick={onMobileMenuClose}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
+                >
+                  <Video className="h-4 w-4" />
+                  Interviews
+                </Link>
+              </li>
+
+              {/* Settings */}
+              <li>
+                <Link
+                  href="/employer/settings"
+                  onClick={onMobileMenuClose}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Link>
+              </li>
             </ul>
           </div>
 

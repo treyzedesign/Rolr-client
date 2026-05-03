@@ -3,9 +3,9 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import toast from "react-hot-toast";
-import { loginUser, registerJobSeeker, getCurrentUser, verifyEmail, resendOtp } from "@/lib/api/auth";
+import { loginUser, registerJobSeeker, getCurrentUser, verifyEmail, resendOtp, forgotPassword, resetPassword, changePassword } from "@/lib/api/auth";
 import { registerEmployer } from "@/lib/api/auth";
-import type { EmployerRegisterRequest, JobSeekerRegisterRequest, LoginRequest, VerifyEmailRequest, ResendOtpRequest } from "@/types/auth";
+import type { EmployerRegisterRequest, JobSeekerRegisterRequest, LoginRequest, VerifyEmailRequest, ResendOtpRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest } from "@/types/auth";
 import type { AuthUser } from "@/types/auth";
 import { 
   setAuthToken, 
@@ -27,9 +27,13 @@ interface AuthState {
   registerEmployer: (payload: EmployerRegisterRequest) => Promise<void>;
   verifyEmail: (payload: VerifyEmailRequest) => Promise<void>;
   resendOtp: (payload: ResendOtpRequest) => Promise<void>;
+  forgotPassword: (payload: ForgotPasswordRequest) => Promise<void>;
+  resetPassword: (payload: ResetPasswordRequest) => Promise<void>;
+  changePassword: (payload: ChangePasswordRequest) => Promise<void>;
   logout: () => void;
   hydrateAuthState: () => void;
   fetchCurrentUser: () => Promise<AuthUser | null>;
+  setError: (error: string | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -54,10 +58,14 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message ;
+          const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials.";
           toast.error(errorMessage);
-          set({ isLoading: false });
-          throw new Error("LOGIN_FAILED");
+          set({ 
+            isLoading: false, 
+            error: errorMessage,
+            token: null,  // clear stale token on failed login
+            user: null,   // clear stale user on failed login
+          });
         }
       },
       async registerEmployer(payload) {
@@ -123,6 +131,42 @@ export const useAuthStore = create<AuthState>()(
           throw new Error("RESEND_FAILED");
         }
       },
+      async forgotPassword(payload) {
+        set({ isLoading: true, error: null });
+        try {
+          await forgotPassword(payload);
+          set({ isLoading: false });
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || "Unable to send reset code. Please try again.";
+          toast.error(errorMessage);
+          set({ isLoading: false });
+          throw new Error("FORGOT_PASSWORD_FAILED");
+        }
+      },
+      async resetPassword(payload) {
+        set({ isLoading: true, error: null });
+        try {
+          await resetPassword(payload);
+          set({ isLoading: false });
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || "Unable to reset password. Please try again.";
+          toast.error(errorMessage);
+          set({ isLoading: false });
+          throw new Error("RESET_PASSWORD_FAILED");
+        }
+      },
+      async changePassword(payload) {
+        set({ isLoading: true, error: null });
+        try {
+          await changePassword(payload);
+          set({ isLoading: false });
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || "Unable to change password. Please try again.";
+          toast.error(errorMessage);
+          set({ isLoading: false });
+          throw new Error("CHANGE_PASSWORD_FAILED");
+        }
+      },
       async fetchCurrentUser() {
         // First try to get user from cookie
         const token = getAuthToken();
@@ -170,6 +214,9 @@ export const useAuthStore = create<AuthState>()(
           clearAuthCookies();
           set({ token: null, user: null });
         }
+      },
+      setError(error) {
+        set({ error });
       },
     }),
     {

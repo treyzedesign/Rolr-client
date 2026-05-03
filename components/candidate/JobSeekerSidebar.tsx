@@ -4,13 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
-import { X, Menu, Briefcase, User, Search, FileText, Settings, Home, LogOut } from "lucide-react";
+import { X, Menu, Briefcase, User, Search, FileText, Settings, Home, LogOut, Video } from "lucide-react";
 
 const candidateNavItems = [
   { href: "/candidate", label: "Dashboard", icon: Home },
   { href: "/candidate/profile", label: "My Profile", icon: User },
   { href: "/candidate/discover", label: "Discover Jobs", icon: Search },
   { href: "/candidate/applications", label: "My Applications", icon: FileText },
+  { href: "/candidate/interviews", label: "Interviews", icon: Video },
   { href: "/candidate/settings", label: "Settings", icon: Settings },
 ];
 
@@ -44,7 +45,7 @@ export function JobSeekerSidebar({ isMobileMenuOpen, onMobileMenuClose }: JobSee
       <aside className={`
         fixed top-0 bottom-0 left-0 z-50 h-full w-64 transform border-r border-blue-100 bg-white dark:border-slate-800 dark:bg-slate-950
         transition-transform duration-300 ease-in-out
-        md:relative md:z-auto md:translate-x-0
+        md:sticky md:top-16 md:z-auto md:h-[calc(100vh-4rem)] md:translate-x-0
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
         {/* Mobile close button */}
@@ -62,7 +63,7 @@ export function JobSeekerSidebar({ isMobileMenuOpen, onMobileMenuClose }: JobSee
 
         {/* Navigation */}
         <nav className="flex flex-col h-full">
-          <div className="p-4 pb-0 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+          <div className="p-4 pb-0  overflow-y-auto" style={{ minHeight: 'calc(100vh - 80px)' }}>
             <h3 className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Job Seeker Portal
             </h3>

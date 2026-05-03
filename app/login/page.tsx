@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/auth-store";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error, user,  } = useAuthStore();
+  const { login, isLoading, error, user, token, setError } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +16,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     // hydrateAuthHeader();
+    if (!token || !user?.role) return;
     if (user?.role === "employer") {
       setIsRedirecting(true);
       router.replace("/employer");
@@ -23,25 +24,19 @@ export default function LoginPage() {
       setIsRedirecting(true);
       router.replace("/candidate");
     }
-  }, [router, user?.role]);
+  }, [router, token, user?.role]);
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    
+  const handleSubmit = async () => {
     // Basic validation
     if (!email.trim() || !password.trim()) {
       return;
     }
 
-    try {
-      await login({ 
-        email: email.trim().toLowerCase(), 
-        password 
-      });
-      // Router will handle redirection based on user role in useEffect
-    } catch {
-      // Store handles error state.
-    }
+    await login({ 
+      email: email.trim().toLowerCase(), 
+      password 
+    });
+    // Router will handle redirection based on user role in useEffect
   };
 
   if (isRedirecting) {
@@ -65,12 +60,21 @@ export default function LoginPage() {
       title="Welcome back to WorkSwipe"
       subtitle="Access your dashboard and continue your journey."
     >
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <div className="space-y-4">
         <label className="block">
           <span className="mb-1 block text-sm text-slate-300">Email address</span>
           <input
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              if (error) setError(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                handleSubmit();
+              }
+            }}
             required
             type="email"
             placeholder="john@example.com"
@@ -83,7 +87,16 @@ export default function LoginPage() {
           <div className="relative">
             <input
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                if (error) setError(null);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  handleSubmit();
+                }
+              }}
               required
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
@@ -115,13 +128,14 @@ export default function LoginPage() {
         )}
         
         <button
-          type="submit"
+          type="button"
+          onClick={handleSubmit}
           disabled={isLoading || !email.trim() || !password.trim()}
           className="glow-ring w-full rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoading ? "Signing in..." : "Sign in"}
         </button>
-      </form>
+      </div>
       
       <div className="mt-6 space-y-4">
         <div className="text-center">

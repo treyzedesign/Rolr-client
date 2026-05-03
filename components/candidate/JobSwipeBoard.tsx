@@ -26,7 +26,24 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
   const rotate = useTransform(x, [-200, 0, 200], [-30, 0, 30]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 0.8, 1, 0.8, 0]);
   const cardScale = useSpring(1, { stiffness: 300, damping: 30 });
-  
+
+  // Reactive button transforms based on drag position — evaluated every frame
+  const passButtonSize = useTransform(x, [-150, -30, 0], ["4rem", "4rem", "3.5rem"]);
+  const passButtonBg = useTransform(x, [-150, -30, 0], ["#f43f5e", "#f43f5e", "#ffffff"]);
+  const passButtonBorder = useTransform(x, [-150, -30, 0], ["#f43f5e", "#f43f5e", "#f87171"]);
+  const passButtonColor = useTransform(x, [-150, -30, 0], ["#ffffff", "#ffffff", "#f43f5e"]);
+  const passButtonScale = useTransform(x, [-150, -30, 0], [1.2, 1.2, 1]);
+
+  const applyButtonSize = useTransform(x, [0, 30, 150], ["3.5rem", "4rem", "4rem"]);
+  const applyButtonBg = useTransform(x, [0, 30, 150], ["#ffffff", "#10b981", "#10b981"]);
+  const applyButtonBorder = useTransform(x, [0, 30, 150], ["#34d399", "#10b981", "#10b981"]);
+  const applyButtonColor = useTransform(x, [0, 30, 150], ["#10b981", "#ffffff", "#ffffff"]);
+  const applyButtonScale = useTransform(x, [0, 30, 150], [1, 1.2, 1.2]);
+
+  // PASS / APPLY label opacity — reactive to drag
+  const passLabelOpacity = useTransform(x, [-150, -30, 0], [1, 1, 0]);
+  const applyLabelOpacity = useTransform(x, [0, 30, 150], [0, 1, 1]);
+
   const topJob = useMemo(() => jobs[0], [jobs]);
   const nextJob = useMemo(() => jobs[1], [jobs]);
 
@@ -71,7 +88,6 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
         action: accepted ? "right" : "left"
       }).catch(error => {
         console.error("Swipe failed:", error);
-        // Could add toast notification here if needed
       });
       
       // Reset animation controls for next card
@@ -90,21 +106,19 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
   };
 
   const formatDescription = (description: string) => {
-  // Create a temporary div to parse HTML
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = description;
-  return tempDiv.textContent || tempDiv.innerText || description;
-};
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = description;
+    return tempDiv.textContent || tempDiv.innerText || description;
+  };
 
   const handleDragEnd = async () => {
     setIsDragging(false);
-    const threshold = 60; // Reduced from 100 for faster swiping
+    const threshold = 60;
     const currentX = x.get();
     
     if (Math.abs(currentX) > threshold) {
       await handleSwipe(currentX > 0);
     } else {
-      // Snap back to center - faster spring
       await controls.start({
         x: 0,
         rotate: 0,
@@ -121,7 +135,7 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
   };
 
   return (
-    <div className="relative w-full max-w-sm mx-auto min-h-[45vh] max-h-[70vh] overflow-visible"> {/* Allow stack card to be visible */}
+    <div className="relative w-full max-w-sm mx-auto min-h-[45vh] max-h-[70vh] overflow-visible">
       {/* Stack effect - show next card underneath */}
       {nextJob && (
         <motion.div
@@ -151,7 +165,7 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
         key={topJob._id}
         className="relative h-full rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50 p-4 mb-6 shadow-[0_20px_70px_-35px_rgba(59,130,246,0.35)] cursor-grab active:cursor-grabbing flex flex-col overflow-hidden"
         style={{ x, rotate, opacity }}
-        drag={isMobile ? "x" : false}
+        drag="x"
         dragControls={dragControls}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.4}
@@ -171,7 +185,7 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
           </span>
         </div>
         
-        {/* Job content - Takes remaining space */}
+        {/* Job content */}
         <div className="rounded-2xl border border-blue-100 bg-white p-4 flex-1 flex flex-col">
           <div className="mb-3">
             <h3 className="font-display text-2xl font-semibold text-slate-900">{topJob.title}</h3>
@@ -195,7 +209,6 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
             </span>
           </div>
 
-          {/* Description - Takes remaining space */}
           <div className="flex-1 overflow-hidden">
             <div 
               className="text-sm text-slate-700 line-clamp-8" 
@@ -224,61 +237,68 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
             </div>
           )}
         </div>
-        {/* Swipe indicators */}
+
+        {/* PASS label — top-left, reactive to leftward drag */}
         <motion.div
-          className="absolute top-4 left-4 rounded-full bg-red-500 p-3 shadow-lg"
-          animate={{
-            opacity: isDragging && x.get() < -30 ? 1 : 0, // Reduced threshold for indicators
-            scale: isDragging && x.get() < -30 ? 1 : 0.5
-          }}
-          transition={{ duration: 0.1 }} // Faster indicator animation
+          className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-lg shadow font-bold text-xs pointer-events-none"
+          style={{ opacity: passLabelOpacity }}
         >
-          <X className="w-6 h-6 text-white" />
-        </motion.div>
-        
-        <motion.div
-          className="absolute top-4 right-4 rounded-full bg-green-500 p-3 shadow-lg"
-          animate={{
-            opacity: isDragging && x.get() > 30 ? 1 : 0, // Reduced threshold for indicators
-            scale: isDragging && x.get() > 30 ? 1 : 0.5
-          }}
-          transition={{ duration: 0.1 }} // Faster indicator animation
-        >
-          <Heart className="w-6 h-6 text-white" />
+          PASS
         </motion.div>
 
-        {/* Mobile swipe hint */}
-        {/* {isMobile && (
-          <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-slate-600">
-            Swipe right to apply • Swipe left to pass
-          </p>
-        )} */}
+        {/* APPLY label — top-right, reactive to rightward drag */}
+        <motion.div
+          className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-lg shadow font-bold text-xs pointer-events-none"
+          style={{ opacity: applyLabelOpacity }}
+        >
+          APPLY
+        </motion.div>
       </motion.div>
       
-      {/* Action buttons - Always visible below the card */}
+      {/* Action buttons */}
       <div className="sticky bottom-2 left-0 right-0 flex justify-center items-center gap-6 px-6">
-        <button
+        {/* Pass / X button — grows and fills red when swiping left */}
+        <motion.button
           type="button"
           onClick={() => handleSwipe(false)}
           disabled={isSwiping}
-          className="w-14 h-14 rounded-full border-2 border-rose-400 bg-white text-rose-500 transition-all hover:bg-rose-50 hover:border-rose-500 hover:scale-110 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white"
+          className="rounded-full border-2 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            width: passButtonSize,
+            height: passButtonSize,
+            backgroundColor: passButtonBg,
+            borderColor: passButtonBorder,
+            color: passButtonColor,
+            scale: passButtonScale,
+          }}
         >
           <X className="w-7 h-7" strokeWidth={3} />
-        </button>
+        </motion.button>
+
         <Link
           href={`/candidate/jobs/${topJob._id}`}
           className="w-14 h-14 rounded-full border-2 border-blue-400 bg-white text-blue-500 transition-all hover:bg-blue-50 hover:border-blue-500 hover:scale-110 flex items-center justify-center shadow-lg"
         >
           <Info className="w-7 h-7" strokeWidth={3} />
         </Link>
-        <button
+
+        {/* Apply / Heart button — grows and fills green when swiping right */}
+        <motion.button
           type="button"
           onClick={() => handleSwipe(true)}
           disabled={isSwiping}
-          className="w-14 h-14 rounded-full border-2 border-emerald-400 bg-white text-emerald-500 transition-all hover:bg-emerald-50 hover:border-emerald-500 hover:scale-110 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white"
+          className="rounded-full border-2 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            width: applyButtonSize,
+            height: applyButtonSize,
+            backgroundColor: applyButtonBg,
+            borderColor: applyButtonBorder,
+            color: applyButtonColor,
+            scale: applyButtonScale,
+          }}
         >
           <Heart className="w-7 h-7" strokeWidth={3} />
-        </button>
+        </motion.button>
       </div>
       
       {/* Job Details Modal */}
