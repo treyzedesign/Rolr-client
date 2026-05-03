@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { useAuthStore } from "@/stores/auth-store";
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { forgotPassword, isLoading, error } = useAuthStore();
@@ -119,5 +119,23 @@ export default function ForgotPasswordPage() {
         </p>
       </div>
     </AuthShell>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={
+      <AuthShell
+        badge="Loading"
+        title="Loading..."
+        subtitle="Please wait..."
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </AuthShell>
+    }>
+      <ForgotPasswordContent />
+    </Suspense>
   );
 }
