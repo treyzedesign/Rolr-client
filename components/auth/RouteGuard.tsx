@@ -34,7 +34,7 @@ export function RouteGuard({
       const userRole = getUserRole();
       if (!userRole || !allowedRoles.includes(userRole as UserRole)) {
         // User is logged in but not authorized for this route
-        const fallbackRoute = userRole === "employer" ? "/employer" : "/candidate";
+        const fallbackRoute = userRole === "employer" ? "/employer" : userRole === "admin" ? "/admin" : "/candidate";
         router.push(fallbackRoute);
         return;
       }

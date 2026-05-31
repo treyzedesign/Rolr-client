@@ -242,7 +242,7 @@ export default function EmployerJobsPage() {
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4 text-slate-400" />
                           <span className="text-sm text-slate-900 dark:text-slate-100">
-                            {job.applications_count || 0}
+                            {job.total_applications || 0}
                           </span>
                         </div>
                       </td>

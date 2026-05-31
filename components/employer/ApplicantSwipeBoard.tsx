@@ -50,7 +50,7 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
 
   // Voice player functions
   const togglePlayPause = () => {
-    if (!audioRef.current || !topApplicant.job_seeker_id.profile.voice_intro_url) return;
+    if (!audioRef.current || !topApplicant.job_seeker_id?.profile?.voice_intro_url) return;
     
     if (isPlaying) {
       audioRef.current.pause();
@@ -88,7 +88,7 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
     }
   }, [topApplicant]);
 
-  if (!topApplicant) {
+  if (!topApplicant || !topApplicant.job_seeker_id?.profile) {
     return (
       <div className="rounded-2xl border border-blue-100 bg-white p-10 text-center text-slate-600">
         No more applicants to review for this job.
@@ -115,7 +115,7 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
       
       // Call API to record the swipe
       await swipeCandidate({
-        candidate_id: topApplicant.job_seeker_id._id,
+        candidate_id: topApplicant.job_seeker_id?._id,
         action: accepted ? "right" : "left"
       }).catch(error => {
         console.error("Swipe API failed:", error);
@@ -153,17 +153,17 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
   };
 
   const handleCardClick = () => {
-    if (!isDragging && topApplicant.job_seeker_id.profile) {
+    if (!isDragging && topApplicant.job_seeker_id?.profile) {
       setIsModalOpen(true);
     }
   };
 
-  const profile = topApplicant.job_seeker_id.profile;
+  const profile = topApplicant.job_seeker_id?.profile;
 
   return (
     <div className="relative w-full max-w-sm mx-auto min-h-[60vh] max-h-[75vh] overflow-visible">
       {/* Stack effect - show next card underneath */}
-      {nextApplicant && nextApplicant.job_seeker_id.profile && (
+      {nextApplicant && nextApplicant.job_seeker_id?.profile && (
         <motion.div
           className="absolute top-0 left-0 right-0 bottom-0 rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50 p-6 shadow-[0_20px_70px_-35px_rgba(59,130,246,0.15)]"
           animate={{
@@ -180,7 +180,7 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <h3 className="font-display text-xl font-semibold text-slate-900">
-                {nextApplicant.job_seeker_id.profile.first_name} {nextApplicant.job_seeker_id.profile.last_name || 'Applicant'}
+                {nextApplicant.job_seeker_id?.profile?.first_name} {nextApplicant.job_seeker_id?.profile?.last_name || 'Applicant'}
               </h3>
               <p className="mt-1 text-lg font-medium text-blue-700">Next Applicant</p>
             </div>

@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { interviewsApi } from "@/lib/api/interviews";
 import type { InterviewSession, EmployerSessionsResponse } from "@/lib/api/interviews";
 import { InterviewResultsModal } from "@/components/employer/InterviewResultsModal";
+import { ShortlistModal } from "@/components/employer/ShortlistModal";
+import toast from "react-hot-toast";
 import { 
   Clock, 
   CheckCircle, 
@@ -92,13 +94,20 @@ export default function EmployerInterviewsPage() {
     }
   };
 
-  const handleShortlist = async (sessionId: string, candidateId: string) => {
+  const [shortlistSession, setShortlistSession] = useState<InterviewSession | null>(null);
+  const [isShortlistOpen, setIsShortlistOpen] = useState(false);
+
+  const handleShortlistConfirm = async (slots: { start: string; end: string }[]) => {
+    if (!shortlistSession) return;
     try {
-      // TODO: Implement shortlist API call
-      console.log(`Shortlisting candidate ${candidateId} from session ${sessionId}`);
-      // await interviewsApi.shortlistCandidate(sessionId);
-    } catch (err) {
+      await interviewsApi.shortlistCandidate(shortlistSession._id, slots);
+      toast.success("Candidate shortlisted successfully!");
+      fetchInterviewSessions();
+    } catch (err: any) {
       console.error("Failed to shortlist candidate:", err);
+      const errMsg = err?.response?.data?.message || "Failed to shortlist candidate";
+      toast.error(errMsg);
+      throw err;
     }
   };
 
@@ -110,6 +119,11 @@ export default function EmployerInterviewsPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedSession(null);
+  };
+
+  const handleCloseShortlist = () => {
+    setIsShortlistOpen(false);
+    setShortlistSession(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -295,6 +309,21 @@ export default function EmployerInterviewsPage() {
                           {getStatusIcon(session.status)}
                           <span className="capitalize">{session.status.replace('_', ' ')}</span> 
                         </div>
+
+                        {/* Verification Tag */}
+                        {session.status === 'completed' && (
+                          session.is_verified ? (
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 shrink-0">
+                              <CheckCircle className="w-4 h-4 text-emerald-600" />
+                              <span>Verified</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 shrink-0">
+                              <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
+                              <span>Pending Verification</span>
+                            </div>
+                          )
+                        )}
                        
                         {/* Progress */}
                         {session.questions && (
@@ -326,17 +355,26 @@ export default function EmployerInterviewsPage() {
                                 e.stopPropagation();
                                 handleViewResults(session);
                               }}
-                              className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
                             >
                               <Eye className="w-4 h-4" />
-                              View Results
+                              Results
                             </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleShortlist(session._id, session.candidate_id);
+                                if (session.is_verified) {
+                                  setShortlistSession(session);
+                                  setIsShortlistOpen(true);
+                                }
                               }}
-                              className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                              disabled={!session.is_verified}
+                              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                                session.is_verified
+                                  ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
+                                  : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                              }`}
+                              title={session.is_verified ? 'Shortlist Candidate' : 'Cannot shortlist until verified by Admin'}
                             >
                               <UserCheck className="w-4 h-4" />
                               Shortlist
@@ -379,6 +417,14 @@ export default function EmployerInterviewsPage() {
       session={selectedSession}
       isOpen={isModalOpen}
       onClose={handleCloseModal}
+    />
+
+    {/* Shortlist Availability Slots Modal */}
+    <ShortlistModal
+      session={shortlistSession}
+      isOpen={isShortlistOpen}
+      onClose={handleCloseShortlist}
+      onConfirm={handleShortlistConfirm}
     />
     </div>
   );

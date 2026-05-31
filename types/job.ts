@@ -27,6 +27,7 @@ export interface Job {
   updated_at?: string;
   applications_count?: number;
   is_active?: boolean;
+  total_applications?: number;
 }
 
 export interface CreateJobRequest {
@@ -94,7 +95,7 @@ export interface Application {
     updated_at: string;
     __v: number;
   };
-  status: "pending" | "reviewing" | "accepted" | "rejected" | "interview_scheduled";
+  status: "submitted" | "matched" | "shortlisted" | "selected" | "rejected";
   questions: any[];
   answers: any[];
   created_at: string;

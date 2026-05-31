@@ -33,10 +33,10 @@ export default function CandidateApplications() {
       // Calculate stats
       const applied = response.applications.length;
       const reviewing = response.applications.filter(app => 
-        app.status === 'pending' || app.status === 'reviewing'
+        app.status === 'submitted' || app.status === 'matched'
       ).length;
       const interviews = response.applications.filter(app => 
-        app.status === 'interview_scheduled'
+        app.status === 'shortlisted'
       ).length;
       
       setStats({ applied, reviewing, interviews });
@@ -59,15 +59,15 @@ export default function CandidateApplications() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'submitted':
         return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
-      case 'reviewing':
+      case 'matched':
         return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300';
-      case 'accepted':
+      case 'selected':
         return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300';
       case 'rejected':
         return 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300';
-      case 'interview_scheduled':
+      case 'shortlisted':
         return 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
       default:
         return 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300';
@@ -76,15 +76,15 @@ export default function CandidateApplications() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'submitted':
         return 'Applied';
-      case 'reviewing':
+      case 'matched':
         return 'In Review';
-      case 'accepted':
+      case 'selected':
         return 'Accepted';
       case 'rejected':
         return 'Not Selected';
-      case 'interview_scheduled':
+      case 'shortlisted':
         return 'Interview Scheduled';
       default:
         return status;
@@ -93,15 +93,15 @@ export default function CandidateApplications() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'submitted':
         return <Send className="w-4 h-4" />;
-      case 'reviewing':
+      case 'matched':
         return <Clock className="w-4 h-4" />;
-      case 'accepted':
+      case 'selected':
         return <CheckCircle className="w-4 h-4" />;
       case 'rejected':
         return <XCircle className="w-4 h-4" />;
-      case 'interview_scheduled':
+      case 'shortlisted':
         return <Calendar className="w-4 h-4" />;
       default:
         return null;

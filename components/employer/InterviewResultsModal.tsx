@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Clock, CheckCircle, AlertCircle, TrendingUp, User, FileText, Calendar } from "lucide-react";
+import { X, Clock, CheckCircle, TrendingUp, User, FileText, Calendar, Play, Pause, Volume2 } from "lucide-react";
 import type { InterviewSession } from "@/lib/api/interviews";
 
 interface InterviewResultsModalProps {
@@ -165,15 +166,16 @@ export function InterviewResultsModal({ session, isOpen, onClose }: InterviewRes
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-slate-900 mb-4">Questions & Answers</h3>
                   <div className="space-y-4">
-                    {session.questions.map((question, index) => {
-                      const answer = session.answers.find(a => a.question_index === question.index - 1);
+                    {session.questions.map((question) => {
+                      const answer = session.answers.find(a => a.question_index === question.index);
+                      const isAudio = !!answer?.audio_url;
                       return (
                         <div key={question._id} className="border border-slate-200 rounded-lg p-4">
                           <div className="mb-3">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-sm font-medium text-slate-500">Question {question.index}</span>
+                              <span className="text-sm font-medium text-slate-500">Question {question.index + 1}</span>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                question.type === 'behavioural' 
+                                question.type === 'behavioural'
                                   ? 'bg-purple-100 text-purple-700'
                                   : question.type === 'situational'
                                   ? 'bg-blue-100 text-blue-700'
@@ -181,15 +183,25 @@ export function InterviewResultsModal({ session, isOpen, onClose }: InterviewRes
                               }`}>
                                 {question.type.charAt(0).toUpperCase() + question.type.slice(1)}
                               </span>
+                              {isAudio && (
+                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 flex items-center gap-1">
+                                  <Volume2 className="w-3 h-3" />
+                                  Voice
+                                </span>
+                              )}
                             </div>
                             <p className="font-medium text-slate-900">{question.text}</p>
                           </div>
-                          
+
                           {answer && (
                             <div className="ml-4 border-l-4 border-blue-200 pl-4">
                               <div className="mb-2">
-                                <p className="text-slate-700 mb-2">{answer.text}</p>
-                                <div className="flex items-center gap-4 text-sm">
+                                {isAudio ? (
+                                  <AudioPlayer url={answer.audio_url!} />
+                                ) : (
+                                  <p className="text-slate-700 mb-2">{answer.text}</p>
+                                )}
+                                <div className="flex items-center gap-4 text-sm mt-2">
                                   <div className={`flex items-center gap-1 font-medium ${getScoreColor(answer.score)}`}>
                                     <TrendingUp className="w-3 h-3" />
                                     <span>{answer.score}/10</span>
@@ -251,5 +263,59 @@ export function InterviewResultsModal({ session, isOpen, onClose }: InterviewRes
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+function AudioPlayer({ url }: { url: string }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const toggle = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  return (
+    <div className="border border-slate-200 rounded-2xl p-4 flex items-center gap-3 my-2 bg-slate-50">
+      <button
+        onClick={toggle}
+        className="w-10 h-10 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center hover:bg-slate-300 transition-colors shrink-0"
+      >
+        {isPlaying ? (
+          <Pause className="w-4 h-4 text-slate-700" />
+        ) : (
+          <Play className="w-4 h-4 text-slate-700 ml-0.5" />
+        )}
+      </button>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-2">
+          <Volume2 className="w-3 h-3 text-slate-600 shrink-0" />
+          <span className="text-xs text-slate-600 font-medium">Voice Response</span>
+        </div>
+        <div className="flex items-center gap-1 h-4">
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="flex-1 bg-slate-400 rounded-full"
+              style={{ height: "2px" }}
+              animate={{ height: isPlaying ? `${Math.random() * 12 + 2}px` : "2px" }}
+              transition={{ duration: 0.3, repeat: isPlaying ? Infinity : 0, repeatType: "reverse", delay: i * 0.05 }}
+            />
+          ))}
+        </div>
+      </div>
+      <audio
+        ref={audioRef}
+        src={url}
+        onEnded={() => setIsPlaying(false)}
+        preload="metadata"
+      />
+    </div>
   );
 }

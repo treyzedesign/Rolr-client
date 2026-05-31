@@ -146,7 +146,16 @@ export default function LoginPage() {
             Forgot your password?
           </Link>
         </div>
-        
+{/*         
+        <div className="text-center">
+          <Link 
+            href="/admin/login" 
+            className="text-sm text-slate-500 hover:text-slate-400"
+          >
+            Admin Portal
+          </Link>
+        </div>
+         */}
         <p className="text-sm text-slate-600">
           New here?{" "}
           <Link href="/register" className="font-semibold text-sky-300 hover:text-sky-200">

@@ -156,7 +156,7 @@ export default function ApplicantsPage() {
                             <div className="flex items-center gap-2 mt-1">
                               <span className="inline-flex items-center text-xs text-blue-600">
                                 <Users className="w-3 h-3 mr-1" />
-                                {applicantCounts[job._id] || job.applications_count || 0} applicants
+                                {applicantCounts[job._id] || job.total_applications || 0} applicants
                               </span>
                               <span className="text-xs text-slate-500">
                                 {job.job_type?.replace('_', ' ') || 'N/A'}

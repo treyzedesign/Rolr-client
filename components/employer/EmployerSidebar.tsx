@@ -10,7 +10,7 @@ const employerNavItems = [
   { href: "/employer", label: "Dashboard", icon: Home },
   { href: "/employer/jobs", label: "Job Management", icon: FileText },
   { href: "/employer/profile", label: "Company Profile", icon: Briefcase },
-  { href: "/employer/discover", label: "Discover Candidates", icon: Users },
+  // { href: "/employer/discover", label: "Discover Candidates", icon: Users },
 ];
 
 interface EmployerSidebarProps {
@@ -22,6 +22,7 @@ export function EmployerSidebar({ isMobileMenuOpen, onMobileMenuClose }: Employe
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const [applicantsDropdownOpen, setApplicantsDropdownOpen] = useState(false);
+  const [interviewsDropdownOpen, setInterviewsDropdownOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -82,9 +83,9 @@ export function EmployerSidebar({ isMobileMenuOpen, onMobileMenuClose }: Employe
                 );
               })}
               
-              {/* Applicants Dropdown */}
+              {/* Applicants Accordion */}
               <li>
-                <div className="relative">
+                <div className="flex flex-col gap-1">
                   <button
                     onClick={() => setApplicantsDropdownOpen(!applicantsDropdownOpen)}
                     className="flex items-center justify-between w-full gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
@@ -97,12 +98,11 @@ export function EmployerSidebar({ isMobileMenuOpen, onMobileMenuClose }: Employe
                   </button>
                   
                   {applicantsDropdownOpen && (
-                    <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-slate-950 rounded-lg border border-blue-100 dark:border-slate-800 shadow-lg z-10">
+                    <div className="ml-4 pl-2 border-l border-slate-200 dark:border-slate-800 flex flex-col gap-1 overflow-hidden">
                       <Link
                         href="/employer/applicants"
                         onClick={() => {
                           onMobileMenuClose();
-                          setApplicantsDropdownOpen(false);
                         }}
                         className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
                       >
@@ -113,7 +113,6 @@ export function EmployerSidebar({ isMobileMenuOpen, onMobileMenuClose }: Employe
                         href="/employer/matches"
                         onClick={() => {
                           onMobileMenuClose();
-                          setApplicantsDropdownOpen(false);
                         }}
                         className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
                       >
@@ -127,14 +126,39 @@ export function EmployerSidebar({ isMobileMenuOpen, onMobileMenuClose }: Employe
 
               {/* Interviews */}
               <li>
-                <Link
-                  href="/employer/interviews"
-                  onClick={onMobileMenuClose}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
-                >
-                  <Video className="h-4 w-4" />
-                  Interviews
-                </Link>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => setInterviewsDropdownOpen(!interviewsDropdownOpen)}
+                    className="flex items-center justify-between w-full gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Video className="h-4 w-4" />
+                      <span>Interviews</span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${interviewsDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {interviewsDropdownOpen && (
+                    <div className="ml-4 pl-2 border-l border-slate-200 dark:border-slate-800 flex flex-col gap-1 overflow-hidden">
+                      <Link
+                        href="/employer/interviews"
+                        onClick={onMobileMenuClose}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
+                      >
+                        <Video className="h-4 w-4" />
+                        AI Sessions
+                      </Link>
+                      <Link
+                        href="/employer/bookings"
+                        onClick={onMobileMenuClose}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
+                      >
+                        <Video className="h-4 w-4" />
+                        Booked Meets
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </li>
 
               {/* Settings */}

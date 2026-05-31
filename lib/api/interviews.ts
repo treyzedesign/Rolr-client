@@ -11,7 +11,11 @@ export interface InterviewQuestion {
 export interface InterviewSession {
   _id: string;
   match_id: string;
-  candidate_id: string;
+  candidate_id: {
+    _id: string;
+    email: string;
+    is_rolr_verified: boolean;
+  };
   employer_id: string;
   job_id: {
     _id: string;
@@ -36,6 +40,7 @@ export interface InterviewSession {
   answers: Array<{
     question_index: number;
     text: string;
+    audio_url?: string;
     score: number;
     feedback: string;
     submitted_at: string;
@@ -43,6 +48,7 @@ export interface InterviewSession {
   }>;
   overall_score?: number;
   summary?: string;
+  is_verified?: boolean;
 }
 
 export interface InterviewSessionResponse {
@@ -134,5 +140,52 @@ export const interviewsApi = {
   getCandidateSessions: async (): Promise<CandidateSessionsResponse> => {
     const response = await apiClient.get('/ai-interviews/candidate/sessions');
     return response.data;
+  },
+
+  // Submit audio answer for the last (audio) question
+  submitAudioAnswer: async (id: string, audioBlob: Blob, questionIndex: number): Promise<AnswerResponse> => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'answer.webm');
+    formData.append('question_index', String(questionIndex));
+    const response = await apiClient.post(`/ai-interviews/${id}/answer/audio`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000 // Increase timeout to 60s for AI processing
+    });
+    return response.data;
+  },
+
+  // Shortlist a candidate whose interview is completed and admin-verified
+  shortlistCandidate: async (id: string, availableSlots: { start: string; end: string }[]): Promise<any> => {
+    const response = await apiClient.post(`/ai-interviews/${id}/shortlist`, {
+      available_slots: availableSlots
+    });
+    return response.data;
+  },
+
+  // Get employer's bookings
+  getEmployerBookings: async (
+    status: string = "all",
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ bookings: EmployerBooking[] }> => {
+    const response = await apiClient.get<{ bookings: EmployerBooking[] }>("/booking/employer/my-bookings", {
+      params: { status, page, limit }
+    });
+    return response.data;
   }
 };
+
+export interface EmployerBooking {
+  _id: string;
+  token: string;
+  status: "pending" | "booked" | "expired";
+  meet_link?: string;
+  google_event_id?: string;
+  candidate_id?: { _id: string; email: string; first_name?: string; last_name?: string };
+  interview_session_id?: { _id: string; job_id: any; overall_score: number };
+  chosen_slot?: { start: string; end: string };
+  available_slots: { start: string; end: string; _id: string }[];
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+}
