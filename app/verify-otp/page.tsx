@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useAuthStore } from "@/stores/auth-store";
 
 function VerifyOtpContent() {
@@ -13,6 +14,7 @@ function VerifyOtpContent() {
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [error, setError] = useState("");
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   
   const { verifyEmail, resendOtp, isLoading } = useAuthStore();
 
@@ -71,7 +73,7 @@ function VerifyOtpContent() {
     try {
       await verifyEmail({ email: email!, otp: otpValue });
       router.push("/login");
-    } catch (err) {
+    } catch {
       setError("Invalid or expired OTP. Please try again.");
     }
   };
@@ -89,7 +91,7 @@ function VerifyOtpContent() {
       // Focus first input
       const firstInput = document.getElementById("otp-0") as HTMLInputElement;
       firstInput?.focus();
-    } catch (err) {
+    } catch {
       setError("Unable to resend OTP. Please try again.");
     }
   };
@@ -101,21 +103,38 @@ function VerifyOtpContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h1>
-          <p className="text-gray-600">
-            We've sent a 6-digit code to {email}
+    <div className="min-h-screen bg-[#f5f6f8] text-slate-900 flex flex-col p-6 sm:p-10 relative font-sans">
+      {/* Brand Logo at Top Left */}
+      <div className="absolute top-8 left-8">
+        <Link href="/" className="text-3xl font-extrabold tracking-tight text-[#2782FF]">
+          Rolr
+        </Link>
+      </div>
+
+      {/* Main card box container */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-full max-w-[480px] bg-white rounded-[32px] p-8 sm:p-12 shadow-sm border border-slate-100/50 flex flex-col animate-fadeIn">
+          
+          {/* Mail Icon badge at top */}
+          <div className="mx-auto w-16 h-16 rounded-2xl border border-slate-100 flex items-center justify-center p-3 mb-6 bg-white shadow-sm">
+            <img 
+              src="/Assets/mail_pic.png" 
+              alt="Mail verification" 
+              className="w-8 h-8 object-contain select-none pointer-events-none" 
+            />
+          </div>
+
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight text-center">
+            Code Verification
+          </h1>
+          
+          <p className="mt-2 text-sm font-semibold text-slate-400 text-center leading-relaxed">
+            We've sent a 6-digit code to <span className="text-[#2782FF] font-bold">{email}</span>
           </p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label htmlFor="otp-0" className="block text-sm font-medium text-gray-700">
-              Enter verification code
-            </label>
-            <div className="flex justify-center gap-2">
+
+          <form onSubmit={handleSubmit} className="space-y-6 mt-8">
+            {/* Input boxes container */}
+            <div className="flex justify-center gap-3">
               {otp.map((digit, index) => (
                 <input
                   key={index}
@@ -127,41 +146,55 @@ function VerifyOtpContent() {
                   value={digit}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-12 h-12 text-center text-lg font-semibold border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onFocus={() => setFocusedIndex(index)}
+                  onBlur={() => setFocusedIndex(null)}
+                  className={`w-12 h-14 text-center text-xl font-bold rounded-2xl border-2 transition-all focus:outline-none focus:ring-0 ${
+                    focusedIndex === index || digit
+                      ? "border-[#2782FF] bg-[#2782FF]/[0.01]"
+                      : "border-transparent bg-[#f5f6f8]"
+                  }`}
                   autoFocus={index === 0}
                 />
               ))}
             </div>
-          </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
+            {error && (
+              <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4 text-left">
+                <p className="text-xs font-semibold text-rose-600">{error}</p>
+              </div>
+            )}
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading}
-          >
-            {isLoading ? "Verifying..." : "Verify Email"}
-          </button>
-
-          <div className="text-center space-y-2">
-            <p className="text-sm text-gray-600">
-              Didn't receive the code?
-            </p>
+            {/* Verify button */}
             <button
-              type="button"
-              onClick={handleResendOtp}
-              disabled={!canResend || isLoading}
-              className="text-sm text-blue-600 hover:text-blue-500 disabled:text-gray-400 disabled:cursor-not-allowed"
+              type="submit"
+              disabled={isLoading || otp.some((d) => !d)}
+              className="w-full py-4 mt-2 rounded-full bg-[#2782FF] text-white font-bold text-sm tracking-wide shadow-md shadow-blue-500/10 hover:bg-[#1a73e8] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {canResend ? "Resend Code" : `Resend in ${formatTime(countdown)}`}
+              {isLoading ? "Verifying..." : "Verify"}
             </button>
+          </form>
+
+          {/* Resend Footer */}
+          <div className="mt-8 text-center">
+            <p className="text-sm font-semibold text-slate-500">
+              Didn't receive code?{" "}
+              {canResend ? (
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  className="text-[#2782FF] hover:underline font-bold transition-all ml-1"
+                >
+                  Resend
+                </button>
+              ) : (
+                <span className="text-slate-400 font-semibold ml-1">
+                  Resend in {formatTime(countdown)}
+                </span>
+              )}
+            </p>
           </div>
-        </form>
+
+        </div>
       </div>
     </div>
   );
@@ -169,7 +202,11 @@ function VerifyOtpContent() {
 
 export default function VerifyOtpPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50">Loading...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#f5f6f8] text-slate-900 flex flex-col p-6 sm:p-10 relative font-sans justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2782FF]"></div>
+      </div>
+    }>
       <VerifyOtpContent />
     </Suspense>
   );

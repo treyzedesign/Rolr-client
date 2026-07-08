@@ -2,63 +2,107 @@ import Link from "next/link";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden px-4 pb-24 pt-16 sm:px-6 sm:pt-20 lg:px-8 lg:pt-28">
+    <section className="relative overflow-hidden bg-[#f5f6f8] dark:bg-slate-950 pb-20 pt-10 transition-colors duration-300">
+      {/* Background soft ambient glows for premium feel */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-blue-100/70 via-white to-white"
+        className="pointer-events-none absolute -left-40 top-24 h-96 w-96 rounded-full bg-[#2782FF]/5 blur-[100px] dark:bg-[#2782FF]/10"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-40 top-24 h-96 w-96 rounded-full bg-sky-500/15 blur-[100px]"
+        className="pointer-events-none absolute -right-32 top-0 h-80 w-80 rounded-full bg-[#2782FF]/5 blur-[90px] dark:bg-[#2782FF]/10"
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-32 top-0 h-80 w-80 rounded-full bg-blue-600/15 blur-[90px]"
-      />
-      <div className="mx-auto max-w-4xl text-center">
-        <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-blue-700">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-400" />
-          Recruitment reimagined
-        </p>
-        <h1 className="font-display text-4xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
-          Swipe into your{" "}
-          <span className="text-gradient-brand">next role</span>
-          <br className="hidden sm:block" /> — or your next hire.
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl">
-          A fast, visual discovery layer for jobs and talent. Voice screening and
-          instant messaging activate the moment both sides swipe right.
-        </p>
-        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-5">
-          <Link
-            href="/register"
-            className="glow-ring inline-flex min-w-[200px] items-center justify-center rounded-xl bg-white px-8 py-3.5 text-base font-semibold text-slate-950 shadow-xl transition hover:bg-sky-50"
-          >
-            Start swiping
-          </Link>
-          <Link
-            href="#how-it-works"
-            className="inline-flex min-w-[200px] items-center justify-center rounded-xl border border-blue-200 bg-white px-8 py-3.5 text-base font-semibold text-blue-700 backdrop-blur-sm transition hover:border-blue-300 hover:bg-blue-50"
-          >
-            See how it works
-          </Link>
-        </div>
-        <dl className="mx-auto mt-16 grid max-w-2xl grid-cols-3 gap-6 border-t border-blue-100 pt-10 sm:gap-8">
-          {[
-            { value: "3×", label: "Faster shortlists" },
-            { value: "Voice", label: "First impressions" },
-            { value: "Live", label: "Match messaging" },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <dt className="font-display text-2xl font-bold text-slate-900 sm:text-3xl">
-                {stat.value}
-              </dt>
-              <dd className="mt-1 text-xs text-slate-500 sm:text-sm">
-                {stat.label}
-              </dd>
+
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 relative">
+        {/* Background overlapping Ellipses */}
+        <img
+          src="/Assets/Ellipse 13.png"
+          alt=""
+          className="absolute left-[-2%] top-[8%] w-[68%] max-w-none h-auto object-contain select-none pointer-events-none z-0 opacity-100 dark:opacity-40"
+        />
+        <img
+          src="/Assets/Ellipse 14.png"
+          alt=""
+          className="absolute left-[-4%] top-[12%] w-[72%] max-w-none h-auto object-contain select-none pointer-events-none z-0 opacity-100 dark:opacity-40"
+        />
+
+        <div className="relative z-10 grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-8">
+          
+          {/* Left Column - Content */}
+          <div className="flex flex-col text-left lg:col-span-7">
+            <h1 className="font-sans text-4xl font-extrabold tracking-tight sm:text-5xl md:text-[54px] leading-[1.15] pb-1">
+              <span className="bg-gradient-to-r from-[#1a365d] to-[#2782FF] bg-clip-text text-transparent dark:from-white dark:to-[#2782FF]">
+                SWIPE INTO YOUR NEXT ROLE
+              </span>
+              <span className="block mt-2 sm:mt-3 bg-gradient-to-r from-[#1a365d] to-[#2782FF] bg-clip-text text-transparent dark:from-white dark:to-[#2782FF]">
+                OR YOUR NEXT HIRE!
+              </span>
+            </h1>
+            
+            <p className="mt-8 max-w-xl text-base sm:text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+              A fast, visual discovery layer for jobs and talent. Voice screening and
+              instant messaging activate the moment both sides swipe right.
+            </p>
+            
+            <div className="mt-10 flex flex-wrap items-center gap-4">
+              <Link
+                href="/register"
+                className="inline-flex min-w-[170px] items-center justify-center rounded-full bg-[#2782FF] px-8 py-3.5 text-base font-semibold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-[#1a73e8] hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
+              >
+                Start Swiping
+              </Link>
+              <Link
+                href="/register"
+                className="inline-flex min-w-[170px] items-center justify-center rounded-full border-2 border-[#2782FF] bg-transparent px-8 py-3 text-base font-semibold text-[#2782FF] transition-all hover:bg-blue-50/50 hover:-translate-y-0.5 active:scale-95 dark:hover:bg-blue-950/20"
+              >
+                Start Hiring
+              </Link>
             </div>
-          ))}
-        </dl>
+          </div>
+
+          {/* Right Column - Image Collage */}
+          <div className="flex justify-center lg:col-span-5 lg:justify-end">
+            <div className="relative w-full max-w-[500px] lg:max-w-none transition-all duration-700 hover:scale-[1.01]">
+              <img
+                src="/Assets/hero_pics_2.png"
+                alt="Rolr App Experience"
+                className="h-auto w-full object-contain select-none pointer-events-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.03)]"
+              />
+            </div>
+          </div>
+
+        </div>
+
+        {/* Stats Section at the Bottom */}
+        <div className="mx-auto mt-20 max-w-4xl border-t border-slate-200/60 pt-10 dark:border-slate-800/80">
+          <div className="grid grid-cols-3 gap-4 text-center sm:gap-8">
+            <div className="flex flex-col items-center">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#2782FF] tracking-tight transition-transform duration-300 hover:scale-105">
+                3x
+              </span>
+              <span className="mt-2 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                Faster shortlists
+              </span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#2782FF] tracking-tight transition-transform duration-300 hover:scale-105">
+                Voice
+              </span>
+              <span className="mt-2 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                First Impression
+              </span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#2782FF] tracking-tight transition-transform duration-300 hover:scale-105">
+                Live
+              </span>
+              <span className="mt-2 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                Match Messaging
+              </span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   );

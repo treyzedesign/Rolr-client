@@ -2,40 +2,47 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import { interviewsApi } from "@/lib/api/interviews";
 import type { InterviewSession, InterviewQuestion } from "@/lib/api/interviews";
-import { Send, CheckCircle, AlertCircle, Loader2, Mic, MicOff, Square } from "lucide-react";
+import { Send, CheckCircle, AlertCircle, Loader2, Mic, MicOff, Square, Bell, ArrowLeft, X, Check } from "lucide-react";
+import { useProfileStore } from "@/stores/profile-store";
+import { useAuthStore } from "@/stores/auth-store";
 
 type RecordingState = "idle" | "recording" | "recorded";
+
+const WAVEFORM_HEIGHTS = [
+  6, 8, 10, 8, 12, 16, 12, 8, 10, 14, 
+  20, 26, 18, 12, 14, 18, 22, 16, 10, 8,
+  12, 18, 24, 30, 24, 18, 12, 14, 20, 24,
+  18, 12, 10, 12, 16, 22, 18, 14, 10, 8,
+  6, 8, 12, 10, 8, 6
+];
 
 export default function InterviewSessionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session");
 
+  const { user } = useAuthStore();
+  const { fetchProfile, getCandidateProfile } = useProfileStore();
+  const candidateProfile = getCandidateProfile();
+
   const [session, setSession] = useState<InterviewSession | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answeredCount, setAnsweredCount] = useState(0);
-
-  // Find first unanswered question when session loads
-  useEffect(() => {
-    if (session && session.questions.length > 0) {
-      const firstUnansweredIndex = session.questions.findIndex(q =>
-        !session.answers?.some(answer => answer.question_index === (q.index - 1))
-      );
-      setAnsweredCount(session.answers?.length ?? 0);
-      if (firstUnansweredIndex !== -1) {
-        setCurrentQuestionIndex(firstUnansweredIndex);
-      }
-    }
-  }, [session]);
+  const [isStarted, setIsStarted] = useState(false);
 
   const [currentAnswer, setCurrentAnswer] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInterviewComplete, setIsInterviewComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Flow previews states
+  const [submittedAnswerText, setSubmittedAnswerText] = useState<string | null>(null);
+  const [submittedAudioUrl, setSubmittedAudioUrl] = useState<string | null>(null);
+  const [submittedAudioDuration, setSubmittedAudioDuration] = useState<number>(0);
+  const [apiResponseCompletion, setApiResponseCompletion] = useState<boolean>(false);
 
   // Voice recording state
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
@@ -44,16 +51,25 @@ export default function InterviewSessionPage() {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [micError, setMicError] = useState<string | null>(null);
 
+  // Audio Playback states for recorded audio preview
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const shouldSubmitOnStopRef = useRef<boolean>(false);
 
   const isLastQuestion = session ? currentQuestionIndex === session.questions.length - 1 : false;
 
-  // Fetch interview session on mount
+  // Fetch interview session and profile on mount
   useEffect(() => {
+    fetchProfile();
+
     if (!sessionId) {
       setError("No interview session provided");
       setLoading(false);
@@ -64,24 +80,51 @@ export default function InterviewSessionPage() {
       try {
         const response = await interviewsApi.getInterviewSession(sessionId);
         setSession(response.session);
-        setLoading(false);
+
+        // Find first unanswered question
+        if (response.session) {
+          if (response.session.status === "completed") {
+            setIsInterviewComplete(true);
+          } else if (response.session.questions.length > 0) {
+            const firstUnansweredIndex = response.session.questions.findIndex(q =>
+              !response.session.answers?.some(answer => answer.question_index === q.index)
+            );
+            const answered = response.session.answers?.length ?? 0;
+            setAnsweredCount(answered);
+
+            if (firstUnansweredIndex !== -1) {
+              setCurrentQuestionIndex(firstUnansweredIndex);
+              // If already answered some questions, skip welcome screen
+              if (answered > 0) {
+                setIsStarted(true);
+              }
+            } else {
+              setIsInterviewComplete(true);
+            }
+          }
+        }
       } catch (err) {
         console.error("Failed to fetch interview session:", err);
         setError("Failed to load interview session");
+      } finally {
         setLoading(false);
       }
     };
 
     fetchSession();
-  }, [sessionId]);
+  }, [sessionId, fetchProfile]);
 
-  // Cleanup audio URL and stream on unmount
+  // Cleanup audio URL, audio tags, and stream on unmount
   useEffect(() => {
     return () => {
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       stopStream();
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
     };
-  }, []);
+  }, [audioUrl]);
 
   const stopStream = () => {
     if (streamRef.current) {
@@ -100,8 +143,8 @@ export default function InterviewSessionPage() {
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/ogg;codecs=opus";
+          ? "audio/webm"
+          : "audio/ogg;codecs=opus";
 
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
@@ -110,7 +153,7 @@ export default function InterviewSessionPage() {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(blob);
         setAudioBlob(blob);
@@ -118,6 +161,22 @@ export default function InterviewSessionPage() {
         setRecordingState("recorded");
         stopStream();
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+
+        if (shouldSubmitOnStopRef.current) {
+          shouldSubmitOnStopRef.current = false;
+          setIsSubmitting(true);
+          try {
+            const response = await interviewsApi.submitAudioAnswer(session!._id, blob, currentQuestionIndex);
+            setSubmittedAudioUrl(url);
+            setSubmittedAudioDuration(recordingDuration || 3);
+            setApiResponseCompletion(!!response.interview_complete);
+          } catch (err) {
+            console.error("Failed to submit audio answer:", err);
+            setError("Failed to submit audio answer. Please try again.");
+          } finally {
+            setIsSubmitting(false);
+          }
+        }
       };
 
       recorder.start(250);
@@ -142,12 +201,54 @@ export default function InterviewSessionPage() {
     }
   };
 
+  const stopAndSubmitRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      shouldSubmitOnStopRef.current = true;
+      mediaRecorderRef.current.stop();
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    } else if (audioBlob) {
+      handleSubmitAudioAnswer();
+    }
+  };
+
   const discardRecording = () => {
     if (audioUrl) URL.revokeObjectURL(audioUrl);
     setAudioBlob(null);
     setAudioUrl(null);
     setRecordingState("idle");
     setRecordingDuration(0);
+    setIsPlayingAudio(false);
+    shouldSubmitOnStopRef.current = false;
+  };
+
+  const handleAudioPlayPause = () => {
+    const targetUrl = submittedAudioUrl || audioUrl;
+    if (!targetUrl) return;
+
+    if (!previewAudioRef.current || previewAudioRef.current.src !== targetUrl) {
+      if (previewAudioRef.current) previewAudioRef.current.pause();
+      const audio = new Audio(targetUrl);
+      previewAudioRef.current = audio;
+
+      audio.addEventListener("play", () => setIsPlayingAudio(true));
+      audio.addEventListener("pause", () => setIsPlayingAudio(false));
+      audio.addEventListener("ended", () => {
+        setIsPlayingAudio(false);
+        setAudioCurrentTime(0);
+      });
+      audio.addEventListener("loadedmetadata", () => {
+        setAudioDuration(audio.duration);
+      });
+      audio.addEventListener("timeupdate", () => {
+        setAudioCurrentTime(audio.currentTime);
+      });
+    }
+
+    if (isPlayingAudio) {
+      previewAudioRef.current.pause();
+    } else {
+      previewAudioRef.current.play();
+    }
   };
 
   const getCurrentQuestion = (): InterviewQuestion | null => {
@@ -164,14 +265,12 @@ export default function InterviewSessionPage() {
     return wordCount >= 5 && wordCount <= 150 && !isSubmitting;
   };
 
-  const canSubmitAudio = (): boolean => {
-    return audioBlob !== null && !isSubmitting;
-  };
-
-  const advanceOrComplete = (interviewComplete: boolean, nextIndex: number) => {
+  const handleNextQuestion = () => {
     const totalQuestions = session?.questions.length ?? 0;
     setAnsweredCount(prev => prev + 1);
-    if (interviewComplete || nextIndex >= totalQuestions) {
+
+    const nextIndex = currentQuestionIndex + 1;
+    if (apiResponseCompletion || nextIndex >= totalQuestions) {
       setIsInterviewComplete(true);
     } else {
       setCurrentQuestionIndex(nextIndex);
@@ -180,7 +279,13 @@ export default function InterviewSessionPage() {
       setAudioUrl(null);
       setRecordingState("idle");
       setRecordingDuration(0);
-      textareaRef.current?.focus();
+      setIsPlayingAudio(false);
+      setSubmittedAnswerText(null);
+      setSubmittedAudioUrl(null);
+      setSubmittedAudioDuration(0);
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
     }
   };
 
@@ -197,7 +302,8 @@ export default function InterviewSessionPage() {
         question_index: currentQuestionIndex,
         text: currentAnswer,
       });
-      advanceOrComplete(!!response.interview_complete, currentQuestionIndex + 1);
+      setSubmittedAnswerText(currentAnswer);
+      setApiResponseCompletion(!!response.interview_complete);
     } catch (err) {
       console.error("Failed to submit answer:", err);
       setError("Failed to submit answer. Please try again.");
@@ -207,14 +313,16 @@ export default function InterviewSessionPage() {
   };
 
   const handleSubmitAudioAnswer = async () => {
-    if (!session || !canSubmitAudio() || !audioBlob) return;
+    if (!session || !audioBlob) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
       const response = await interviewsApi.submitAudioAnswer(session._id, audioBlob, currentQuestionIndex);
-      advanceOrComplete(!!response.interview_complete, currentQuestionIndex + 1);
+      setSubmittedAudioUrl(audioUrl);
+      setSubmittedAudioDuration(recordingDuration);
+      setApiResponseCompletion(!!response.interview_complete);
     } catch (err) {
       console.error("Failed to submit audio answer:", err);
       setError("Failed to submit audio answer. Please try again.");
@@ -224,28 +332,73 @@ export default function InterviewSessionPage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && e.ctrlKey && canSubmitText()) {
-      handleSubmitTextAnswer();
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (canSubmitText()) {
+        handleSubmitTextAnswer();
+      }
     }
   };
 
   const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 65) % 60;
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const formatTimeRemaining = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const getProgressPercentage = (): number => {
-    if (!session) return 0;
-    return (answeredCount / session.questions.length) * 100;
-  };
+  const candidateName = candidateProfile?.first_name && candidateProfile?.last_name
+    ? `${candidateProfile.first_name} ${candidateProfile.last_name}`
+    : user?.fullName || "Jetty Connor";
+
+  const emailDisplay = user?.email || "candidate@example.com";
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-slate-600">Loading interview...</p>
+      <div className="space-y-6 pb-12 flex flex-col min-h-full">
+        {/* Page Header */}
+        <div className="hidden md:flex flex-col gap-6 md:flex-row md:items-center md:justify-between flex-shrink-0 select-none">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.push("/candidate/interviews")} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 border-none bg-transparent cursor-pointer font-bold text-xs">
+              <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+              Back to Interview
+            </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-655 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>
+            </button>
+            <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                {candidateProfile?.profile_image_url ? (
+                  <img src={candidateProfile.profile_image_url} alt="avatar" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  candidateName.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">{emailDisplay}</span>
+                <div className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  <span className="text-[10px] text-slate-550 dark:text-slate-400 font-medium">Candidate</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading Spinner */}
+        <div className="flex-1 flex flex-col justify-center items-center pt-32 text-center select-none">
+          <div className="relative flex items-center justify-center w-12 h-12 mb-6">
+            <div className="w-12 h-12 rounded-full border-[3px] border-blue-100 border-t-blue-500 animate-spin"></div>
+          </div>
+          <p className="text-sm font-semibold text-slate-650 dark:text-slate-400">Loading interview session...</p>
         </div>
       </div>
     );
@@ -253,44 +406,84 @@ export default function InterviewSessionPage() {
 
   if (error && !session) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Error</h2>
-          <p className="text-slate-600 mb-4">{error}</p>
-          <button
-            onClick={() => router.push("/candidate/interviews")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Back to Sessions
-          </button>
-        </div>
+      <div className="min-h-[500px] flex flex-col justify-center items-center text-center p-8 select-none">
+        <AlertCircle className="w-14 h-14 text-red-500 mb-4" />
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Error</h2>
+        <p className="text-xs text-slate-500 mb-6 max-w-sm">{error}</p>
+        <button
+          onClick={() => router.push("/candidate/interviews")}
+          className="px-6 py-2.5 bg-blue-650 hover:bg-blue-700 text-white text-xs font-bold rounded-full transition-all border-none cursor-pointer"
+        >
+          Back to Sessions
+        </button>
       </div>
     );
   }
 
   if (isInterviewComplete) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-md mx-4"
-        >
-          <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-          <h1 className="text-3xl font-bold text-slate-900 mb-4">Interview Complete!</h1>
-          <p className="text-slate-600 mb-8">
-            Thank you for completing the interview. Your responses have been submitted successfully.
-            The employer will review your answers and get back to you soon.
-          </p>
-          <button
-            onClick={() => router.push("/candidate/interviews")}
-            className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
-          >
-            Back to Sessions
-          </button>
-        </motion.div>
+      <div className="space-y-6 pb-12 flex flex-col min-h-full">
+        {/* Page Header */}
+        <div className="hidden md:flex flex-col gap-6 md:flex-row md:items-center md:justify-between flex-shrink-0 select-none">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.push("/candidate/interviews")} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 border-none bg-transparent cursor-pointer font-bold text-xs">
+              <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+              Back to Interview
+            </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-655 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>
+            </button>
+            <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                {candidateProfile?.profile_image_url ? (
+                  <img src={candidateProfile.profile_image_url} alt="avatar" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  candidateName.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">{emailDisplay}</span>
+                <div className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  <span className="text-[10px] text-slate-550 dark:text-slate-400 font-medium">Candidate</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Completion card wrapper */}
+        <div className="flex-1 flex justify-center items-center pt-8">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.08)] w-full max-w-xl text-center select-none min-h-[580px] flex flex-col justify-center items-center">
+            {/* Sleek Bot Icon */}
+            <div className="mb-6 relative w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-sm">
+              <img src="/Assets/bot_pic.png" alt="AI Assistant" className="w-16 h-16 rounded-full object-cover shadow-sm" />
+            </div>
+
+            <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100 leading-normal mb-6">
+              Interview Completed Successfully 🎉
+            </h2>
+
+            <div className="text-slate-655 dark:text-slate-400 text-xs md:text-sm font-medium space-y-4 max-w-md mx-auto text-center leading-relaxed">
+              <p>Thank you for completing your interview assessment.</p>
+              <p>Your responses, including your voice recording and test answers, have been submitted successfully and are now being reviewed by our team.</p>
+              <p>If your profile matches our requirements, we'll contact you regarding the next stage of the recruitment process.</p>
+              <p className="pt-2 text-slate-450 dark:text-slate-500">
+                We appreciate the time and effort you invested in this assessment. We wish you the best of luck!
+              </p>
+            </div>
+
+            <button
+              onClick={() => router.push("/candidate/discover")}
+              className="mt-8 px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-full transition-all border-none cursor-pointer flex items-center justify-center gap-2 mx-auto shadow-sm hover:scale-102 active:scale-95 min-w-[160px]"
+            >
+              Discover Jobs
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -298,321 +491,415 @@ export default function InterviewSessionPage() {
   const currentQuestion = getCurrentQuestion();
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-600">No questions available</p>
+      <div className="min-h-[500px] flex flex-col justify-center items-center text-center p-8 select-none">
+        <AlertCircle className="w-12 h-12 text-slate-400 mb-3" />
+        <p className="text-sm font-semibold text-slate-500">No questions available</p>
+      </div>
+    );
+  }
+
+  // 1. Welcome Onboarding screen before starting
+  if (!isStarted) {
+    return (
+      <div className="space-y-6 pb-12 flex flex-col min-h-full">
+        {/* Header toolbar */}
+        <div className="hidden md:flex flex-col gap-6 md:flex-row md:items-center md:justify-between flex-shrink-0 select-none">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.push("/candidate/interviews")} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 border-none bg-transparent cursor-pointer font-bold text-xs">
+              <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+              Back to Interview
+            </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-655 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>
+            </button>
+            <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                {candidateProfile?.profile_image_url ? (
+                  <img src={candidateProfile.profile_image_url} alt="avatar" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  candidateName.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">{emailDisplay}</span>
+                <div className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Candidate</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal card wrapper */}
+        <div className="flex-1 flex justify-center items-center pt-8">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.08)] w-full max-w-xl text-center select-none min-h-[580px] flex flex-col justify-center items-center">
+            {/* Sleek Bot Icon */}
+            <div className="mb-6 relative w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-sm">
+              <img src="/Assets/bot_pic.png" alt="AI Assistant" className="w-16 h-16 rounded-full object-cover shadow-sm" />
+            </div>
+
+            <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100 leading-normal max-w-sm mx-auto mb-6">
+              Welcome! {candidateName} you're about to begin your interview assessment.
+            </h2>
+
+            <div className="text-slate-555 dark:text-slate-400 text-xs md:text-sm font-medium space-y-4 max-w-sm mx-auto text-left leading-relaxed">
+              <p>This assessment consists of:</p>
+              <ol className="list-decimal pl-4 space-y-2">
+                <li>Test-based questions to evaluate your skills and knowledge</li>
+                <li>A voice response question where you'll test your microphone and record a short answer.</li>
+              </ol>
+              <p className="pt-2 text-slate-400">
+                Please ensure you're in a quiet environment and that your microphone is working properly before you begin.
+              </p>
+              <p className="text-center font-semibold pt-4 text-slate-700 dark:text-slate-350">
+                Click Continue to start the interview
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsStarted(true)}
+              className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-full transition-all border-none cursor-pointer flex items-center justify-center gap-2 mx-auto shadow-sm hover:scale-102 active:scale-95"
+            >
+              Continue
+              <span className="text-sm font-light mt-[-2px]">&rarr;</span>
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <button
-                onClick={() => router.push("/candidate/interviews")}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-2"
-              >
-                ← Back to Sessions
-              </button>
-              <h1 className="text-2xl font-bold text-slate-900">AI Interview</h1>
-              <p className="text-slate-600">{session?.job_id.title}</p>
-            </div>
-          </div>
+  // Check if we are previewing the answer that was just submitted
+  const isPreviewingAnswer = submittedAnswerText !== null || submittedAudioUrl !== null;
 
-          {/* Progress Bar */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-700">
-                {answeredCount} of {session?.questions.length} Questions Answered
-              </span>
-              <span className="text-sm text-slate-500">
-                {Math.round(getProgressPercentage())}% Complete
-              </span>
+  return (
+    <div className="space-y-6 pb-12 flex flex-col min-h-full">
+      {/* Active Session Header toolbar */}
+      <div className="hidden md:flex flex-col gap-6 md:flex-row md:items-center md:justify-between flex-shrink-0 select-none">
+        <div className="flex items-center gap-4">
+          <button onClick={() => router.push("/candidate/interviews")} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 border-none bg-transparent cursor-pointer font-bold text-xs">
+            <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+            Back to Interview
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-655 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>
+          </button>
+          <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+              {candidateProfile?.profile_image_url ? (
+                <img src={candidateProfile.profile_image_url} alt="avatar" className="h-full w-full rounded-full object-cover" />
+              ) : (
+                candidateName.charAt(0).toUpperCase()
+              )}
             </div>
-            <div className="w-full bg-slate-200 rounded-full h-2">
-              <motion.div
-                className="bg-blue-600 h-2 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${getProgressPercentage()}%` }}
-                transition={{ duration: 0.5 }}
-              />
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">{emailDisplay}</span>
+              <div className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Candidate</span>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Question Card */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentQuestionIndex}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6"
-          >
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  currentQuestion.type === "behavioural"
-                    ? "bg-purple-100 text-purple-700"
-                    : currentQuestion.type === "situational"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-green-100 text-green-700"
-                }`}>
-                  {currentQuestion.type.charAt(0).toUpperCase() + currentQuestion.type.slice(1)}
-                </span>
-                <span className="text-sm text-slate-500">Question {currentQuestion.index}</span>
-                {isLastQuestion && (
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 flex items-center gap-1">
-                    <Mic className="w-3 h-3" />
-                    Voice Answer
-                  </span>
-                )}
+      {/* Main card panel */}
+      <div className="flex-1 flex justify-center items-start pt-6">
+        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.08)] w-full max-w-2xl flex flex-col justify-start min-h-[580px]">
+
+          {/* Conversational Layout Container */}
+          <div className="flex-1 flex flex-col justify-between">
+            {/* Chat Conversation Stream */}
+            <div className="space-y-6">
+              {/* AI Agent Question bubble */}
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden bg-gradient-to-tr from-blue-500 to-cyan-400 shadow-sm border border-slate-100 dark:border-slate-800 select-none">
+                  <img src="/Assets/bot_pic.png" alt="AI Agent" className="w-10 h-10 rounded-full object-cover" />
+                </div>
+                <div className="bg-slate-50 border border-slate-100/70 rounded-3xl p-6 text-sm text-slate-850 dark:bg-slate-950/20 dark:border-slate-800/80 dark:text-slate-200 leading-relaxed flex-1 max-w-xl">
+                  <p className="font-semibold">{currentQuestion.text}</p>
+                </div>
               </div>
 
-              <h2 className="text-xl font-semibold text-slate-900 mb-4">
-                {currentQuestion.text}
-              </h2>
+              {/* User Answer Preview Bubble (Phase 2: Previewing submitted answer, right aligned) */}
+              {isPreviewingAnswer && (
+                <>
+                  {submittedAnswerText !== null ? (
+                    /* Text Preview bubble matching Mockup Image 6 */
+                    <div className="flex items-start justify-end space-x-4 mt-6">
+                      <div className="bg-blue-600 rounded-3xl p-5 text-sm text-white leading-relaxed flex-1 max-w-xl relative">
+                        <p className="font-medium pr-10">{submittedAnswerText}</p>
+                        <span className="text-[9px] font-bold text-blue-200 block text-right mt-2 select-none">
+                          2:30 PM
+                        </span>
+                      </div>
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden bg-blue-100 text-sm font-bold text-blue-700 border border-slate-100 flex items-center justify-center select-none">
+                        {candidateProfile?.profile_image_url ? (
+                          <img src={candidateProfile.profile_image_url} alt="candidate" className="w-full h-full object-cover" />
+                        ) : (
+                          candidateName.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Voice Preview bubble matching Mockup Image 9 */
+                    <div className="flex items-start justify-end space-x-4 mt-6">
+                      <div className="bg-blue-600 rounded-[2rem] p-4 pr-12 pb-6 flex items-center gap-3 w-full max-w-sm shadow-sm relative">
+                        <button
+                          onClick={handleAudioPlayPause}
+                          className="flex-shrink-0 flex items-center justify-center w-8 h-8 bg-white text-blue-600 rounded-full hover:scale-105 active:scale-95 transition-all cursor-pointer border-none shadow-sm"
+                        >
+                          {isPlayingAudio ? (
+                            <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                          ) : (
+                            <svg className="w-3 h-3 fill-current ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                          )}
+                        </button>
+
+                        {/* Audio Progress Waveform inside blue bubble */}
+                        <div className="flex-1 h-8 flex items-center gap-[2.5px] select-none px-2 overflow-hidden">
+                          {WAVEFORM_HEIGHTS.map((height, i) => {
+                            const progress = audioDuration ? (audioCurrentTime / audioDuration) : 0;
+                            const isPlayed = (i / WAVEFORM_HEIGHTS.length) < progress;
+                            return (
+                              <div
+                                key={i}
+                                className={`w-[2px] rounded-full transition-all duration-300 ${
+                                  isPlayed ? "bg-white" : "bg-white/40"
+                                }`}
+                                style={{ height: `${height * 0.6}px` }}
+                              />
+                            );
+                          })}
+                        </div>
+
+                        <span className="absolute bottom-2 right-4 text-[10px] font-bold text-blue-200 select-none font-mono">
+                          {isPlayingAudio ? formatTime(audioCurrentTime) : formatTimeRemaining(submittedAudioDuration) || "0:03"}
+                        </span>
+                      </div>
+
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden bg-blue-100 text-sm font-bold text-blue-700 border border-slate-100 flex items-center justify-center select-none">
+                        {candidateProfile?.profile_image_url ? (
+                          <img src={candidateProfile.profile_image_url} alt="candidate" className="w-full h-full object-cover" />
+                        ) : (
+                          candidateName.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
-            {/* Answer Section */}
-            {isLastQuestion ? (
-              <VoiceAnswerSection
-                recordingState={recordingState}
-                recordingDuration={recordingDuration}
-                audioUrl={audioUrl}
-                micError={micError}
-                isSubmitting={isSubmitting}
-                onStart={startRecording}
-                onStop={stopRecording}
-                onDiscard={discardRecording}
-                onSubmit={handleSubmitAudioAnswer}
-                canSubmit={canSubmitAudio()}
-                formatTime={formatTime}
-              />
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Your Answer
-                </label>
-                <textarea
-                  ref={textareaRef}
-                  value={currentAnswer}
-                  onChange={(e) => setCurrentAnswer(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type your answer here... (5-150 words)"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-32"
-                  disabled={isSubmitting}
-                />
-
-                <div className="flex items-center justify-between mt-3">
-                  <span className={`text-sm ${
-                    (getWordCount(currentAnswer) >= 5 && getWordCount(currentAnswer) <= 150)
-                      ? "text-green-600"
-                      : getWordCount(currentAnswer) > 150
-                      ? "text-red-600"
-                      : "text-slate-500"
-                  }`}>
-                    {getWordCount(currentAnswer)} words (5-150 required)
-                  </span>
-
+            {/* User Interaction Controls Area (Answering state vs. Previewing state) */}
+            <div className="mt-8">
+              {isPreviewingAnswer ? (
+                /* Next Step / Final submit button */
+                <div className="flex justify-center pt-8 select-none">
                   <button
-                    onClick={handleSubmitTextAnswer}
-                    disabled={!canSubmitText()}
-                    className={`flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-colors ${
-                      canSubmitText()
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                    }`}
+                    onClick={handleNextQuestion}
+                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-full transition-all border-none cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:scale-102 active:scale-95 min-w-[160px]"
                   >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Submitting...
-                      </>
+                    {isLastQuestion ? (
+                      "Submit Interview"
                     ) : (
                       <>
-                        <Send className="w-4 h-4" />
-                        Submit Answer
+                        Next
+                        <span className="text-sm font-light mt-[-2px]">&rarr;</span>
                       </>
                     )}
                   </button>
                 </div>
-              </div>
-            )}
+              ) : isLastQuestion ? (
+                /* A. VOICE RECORDING WORKSPACE (Phase 1: Recording) */
+                <div className="space-y-4">
+                  {micError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2">
+                      <MicOff className="w-4 h-4 text-red-500 shrink-0" />
+                      <p className="text-xs text-red-750 font-bold">{micError}</p>
+                    </div>
+                  )}
 
-            {/* Tips */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-              <p className="text-sm text-blue-700">
-                <strong>Tip:</strong> {currentQuestion.ideal_answer_hint}
-              </p>
+                  {recordingState === "idle" && (
+                    /* Voice recording idle box matching Mockup Image 7 */
+                    <div className="bg-slate-50 dark:bg-slate-950/20 rounded-3xl p-6 flex items-center justify-center min-h-[100px] select-none border border-slate-100/50 dark:border-slate-800/40">
+                      <button
+                        onClick={startRecording}
+                        disabled={isSubmitting}
+                        className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:scale-105 active:scale-95 transition-all border-none cursor-pointer"
+                      >
+                        <Mic className="w-5 h-5 stroke-[2.5]" />
+                      </button>
+                    </div>
+                  )}
+
+                  {recordingState === "recording" && (
+                    /* Voice recording active workspace matching mockup 1 */
+                    <div className="flex flex-col items-center justify-center gap-6 py-6 px-6 bg-slate-50 dark:bg-slate-950/20 rounded-3xl w-full relative select-none border border-slate-100/50 dark:border-slate-800/40">
+                      {/* Timer & sound waves row */}
+                      <div className="flex items-center justify-center gap-4 w-full max-w-md">
+                        <span className="text-sm font-medium text-slate-655 dark:text-slate-400 font-mono select-none shrink-0">
+                          {formatTime(recordingDuration)}
+                        </span>
+
+                        {/* Sound Wave bars animation */}
+                        <div className="flex-1 h-12 flex items-center justify-center gap-[2px] select-none overflow-hidden">
+                          {WAVEFORM_HEIGHTS.map((height, i) => (
+                            <div
+                              key={i}
+                              className="w-[2px] rounded-full bg-blue-400/90 animate-pulse"
+                              style={{
+                                height: `${height}px`,
+                                animationDelay: `${i * 30}ms`,
+                                animationDuration: "1s"
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Discard, Stop, Submit Actions bar */}
+                      <div className="flex items-center justify-center gap-10 w-full">
+                        <button
+                          onClick={discardRecording}
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-transparent hover:bg-slate-200/50 text-slate-900 dark:text-slate-100 transition-all border-none cursor-pointer"
+                          title="Discard"
+                        >
+                          <X className="w-5 h-5 stroke-[2.5]" />
+                        </button>
+
+                        <button
+                          onClick={stopRecording}
+                          className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-md active:scale-95 transition-all border-none cursor-pointer"
+                          title="Stop"
+                        >
+                          <Square className="w-4 h-4 fill-white text-white" />
+                        </button>
+
+                        <button
+                          onClick={stopAndSubmitRecording}
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-transparent hover:bg-slate-200/50 text-slate-900 dark:text-slate-100 transition-all border-none cursor-pointer"
+                          title="Submit"
+                        >
+                          <Check className="w-5 h-5 stroke-[2.5]" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {recordingState === "recorded" && (
+                    isSubmitting ? (
+                      /* Recorded submission loader state */
+                      <div className="bg-slate-50 dark:bg-slate-950/20 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 min-h-[140px] select-none border border-slate-100/50 dark:border-slate-800/40">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Processing Audio answer...</p>
+                      </div>
+                    ) : (
+                      /* Recorded audio preview before submission matching mockup 2 & 3 */
+                      <div className="flex flex-col items-center justify-center gap-6 py-6 px-6 bg-slate-50 dark:bg-slate-950/20 rounded-3xl w-full relative select-none border border-slate-100/50 dark:border-slate-800/40">
+                        {/* Audio player preview row */}
+                        <div className="flex items-center justify-center gap-4 w-full max-w-md">
+                          <span className="text-sm font-medium text-slate-655 dark:text-slate-400 font-mono select-none shrink-0">
+                            {formatTime(recordingDuration)}
+                          </span>
+
+                          {/* Progress waveform */}
+                          <div className="flex-1 h-12 flex items-center justify-center gap-[2px] select-none overflow-hidden">
+                            {WAVEFORM_HEIGHTS.map((height, i) => {
+                              const progress = audioDuration ? (audioCurrentTime / audioDuration) : 0;
+                              const isPlayed = (i / WAVEFORM_HEIGHTS.length) < progress;
+                              return (
+                                <div
+                                  key={i}
+                                  className={`w-[2px] rounded-full transition-all duration-200 ${
+                                    isPlayed ? "bg-blue-600" : "bg-blue-300"
+                                  }`}
+                                  style={{ height: `${height}px` }}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Discard / Play-Pause / Submit Actions bar */}
+                        <div className="flex items-center justify-center gap-10 w-full">
+                          <button
+                            onClick={discardRecording}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-transparent hover:bg-slate-200/50 text-slate-900 dark:text-slate-100 transition-all border-none cursor-pointer"
+                            title="Discard"
+                          >
+                            <X className="w-5 h-5 stroke-[2.5]" />
+                          </button>
+
+                          <button
+                            onClick={handleAudioPlayPause}
+                            className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-md active:scale-95 transition-all border-none cursor-pointer"
+                            title={isPlayingAudio ? "Pause" : "Play"}
+                          >
+                            {isPlayingAudio ? (
+                              <svg className="w-5 h-5 fill-current text-white" viewBox="0 0 24 24">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5 fill-current text-white ml-0.5" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            )}
+                          </button>
+
+                          <button
+                            onClick={handleSubmitAudioAnswer}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-transparent hover:bg-slate-200/50 text-slate-900 dark:text-slate-100 transition-all border-none cursor-pointer"
+                            title="Submit Answer"
+                          >
+                            <Check className="w-5 h-5 stroke-[2.5]" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                /* B. TEXT INPUT WORKSPACE (Phase 1: Answering) */
+                <div className="relative mt-8">
+                  <textarea
+                    ref={textareaRef}
+                    value={currentAnswer}
+                    onChange={(e) => setCurrentAnswer(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type here....."
+                    disabled={isSubmitting}
+                    className="w-full rounded-2xl bg-slate-50 border-none p-4 pr-12 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none h-28 dark:bg-slate-950 dark:text-slate-100 leading-relaxed"
+                  />
+                  <button
+                    onClick={handleSubmitTextAnswer}
+                    disabled={!canSubmitText()}
+                    className="absolute bottom-3.5 right-3.5 p-2 bg-transparent hover:bg-slate-200/50 rounded-full transition-colors border-none cursor-pointer text-blue-650 disabled:text-slate-300 dark:disabled:text-slate-750"
+                  >
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Error banner */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-            <p className="text-sm text-red-700">{error}</p>
           </div>
-        )}
 
-        {/* Instructions */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-          <h3 className="font-semibold text-slate-900 mb-3">Interview Guidelines</h3>
-          <ul className="space-y-2 text-sm text-slate-600">
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span>Answer each question thoughtfully and thoroughly</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span>Text questions: 5-150 words required</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span>The last question requires a voice recording</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span>Press Ctrl+Enter to submit text answers quickly</span>
-            </li>
-          </ul>
         </div>
       </div>
-    </div>
-  );
-}
 
-interface VoiceAnswerSectionProps {
-  recordingState: RecordingState;
-  recordingDuration: number;
-  audioUrl: string | null;
-  micError: string | null;
-  isSubmitting: boolean;
-  onStart: () => void;
-  onStop: () => void;
-  onDiscard: () => void;
-  onSubmit: () => void;
-  canSubmit: boolean;
-  formatTime: (s: number) => string;
-}
-
-function VoiceAnswerSection({
-  recordingState,
-  recordingDuration,
-  audioUrl,
-  micError,
-  isSubmitting,
-  onStart,
-  onStop,
-  onDiscard,
-  onSubmit,
-  canSubmit,
-  formatTime,
-}: VoiceAnswerSectionProps) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-4">
-        Your Voice Answer
-      </label>
-
-      {micError && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-          <MicOff className="w-4 h-4 text-red-500 shrink-0" />
-          <p className="text-sm text-red-700">{micError}</p>
-        </div>
-      )}
-
-      {recordingState === "idle" && (
-        <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-slate-200 rounded-xl gap-4">
-          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-            <Mic className="w-8 h-8 text-blue-600" />
-          </div>
-          <p className="text-slate-600 text-sm">Click the button below to start recording your answer</p>
-          <button
-            onClick={onStart}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
-          >
-            <Mic className="w-4 h-4" />
-            Start Recording
-          </button>
-        </div>
-      )}
-
-      {recordingState === "recording" && (
-        <div className="flex flex-col items-center justify-center py-8 border-2 border-red-200 bg-red-50 rounded-xl gap-4">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-              <Mic className="w-8 h-8 text-red-600" />
-            </div>
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
-          </div>
-          <div className="text-center">
-            <p className="text-red-700 font-medium">Recording...</p>
-            <p className="text-red-600 text-sm font-mono mt-1">{formatTime(recordingDuration)}</p>
-          </div>
-          <button
-            onClick={onStop}
-            className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium"
-          >
-            <Square className="w-4 h-4" />
-            Stop Recording
-          </button>
-        </div>
-      )}
-
-      {recordingState === "recorded" && audioUrl && (
-        <div className="flex flex-col gap-4 p-6 border border-slate-200 rounded-xl bg-slate-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-800">Recording complete</p>
-              <p className="text-xs text-slate-500">{formatTime(recordingDuration)} recorded</p>
-            </div>
-          </div>
-
-          <audio controls src={audioUrl} className="w-full h-10" />
-
-          <div className="flex gap-3">
-            <button
-              onClick={onDiscard}
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-100 transition-colors text-sm font-medium disabled:opacity-50"
-            >
-              Re-record
-            </button>
-            <button
-              onClick={onSubmit}
-              disabled={!canSubmit}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
-                canSubmit
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
-              }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  Submit Recording
-                </>
-              )}
-            </button>
-          </div>
+      {/* Error banner message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-2 max-w-xl select-none mx-auto">
+          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <p className="text-xs text-red-750 font-bold">{error}</p>
         </div>
       )}
     </div>

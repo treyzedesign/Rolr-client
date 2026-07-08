@@ -1,12 +1,9 @@
-import { Application } from "@/types/job";
-import { CheckCircle, Clock, Send, XCircle, Calendar, Heart } from "lucide-react";
+"use client";
 
-export const APPLICATION_STATUS = {
-  SUBMITTED: 'submitted',
-  MATCHED: 'matched',
-  SHORTLISTED: 'shortlisted',
-  SELECTED: 'selected',
-} as const;
+import { motion, AnimatePresence } from "framer-motion";
+import { X, MapPin, Briefcase, CircleDollarSign, Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import type { Application } from "@/types/job";
 
 interface ApplicationTimelineProps {
   application: Application;
@@ -15,205 +12,209 @@ interface ApplicationTimelineProps {
 }
 
 export function ApplicationTimeline({ application, isOpen, onClose }: ApplicationTimelineProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'submitted':
-        return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
-      case 'matched':
-        return 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
-      case 'shortlisted':
-        return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300';
-      case 'selected':
-        return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300';
-      case 'rejected':
-        return 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300';
-      default:
-        return 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300';
+  const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
     }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  if (!mounted) return null;
+
+  const job = application.job_id;
+  if (!job) return null;
+
+  // Format created date
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const months = ["Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    
+    return `${day} ${month}, ${year} | ${hours}:${minutes} ${ampm}`;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'submitted':
-        return <Send className="w-4 h-4" />;
-      case 'matched':
-        return <Heart className="w-4 h-4" />;
-      case 'shortlisted':
-        return <Clock className="w-4 h-4" />;
-      case 'selected':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'rejected':
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'submitted':
-        return 'Applied';
-      case 'matched':
-        return 'Matched';
-      case 'shortlisted':
-        return 'Shortlisted';
-      case 'selected':
-        return 'Selected';
-      case 'rejected':
-        return 'Not Selected';
-      default:
-        return status;
-    }
-  };
+  // Determine stage completion
+  const isAppliedCompleted = true;
+  const isMatchedCompleted = ["matched", "shortlisted", "selected", "rejected"].includes(application.status);
+  const isShortlistedCompleted = ["shortlisted", "selected", "rejected"].includes(application.status);
+  const isHiredCompleted = application.status === "selected";
 
   const timelineSteps = [
     {
-      status: 'submitted',
-      label: 'Application Submitted',
-      description: 'Your application has been received',
-      completed: true,
-      current: application.status === 'submitted'
+      id: "applied",
+      label: `Applied to ${job.title} Role`,
+      subtext: formatDateTime(application.created_at),
+      completed: isAppliedCompleted,
     },
     {
-      status: 'matched',
-      label: 'Matched',
-      description: 'You are a strong match for this position',
-      completed: ['matched', 'shortlisted', 'selected', 'rejected'].includes(application.status),
-      current: application.status === 'matched'
+      id: "matched",
+      label: "Matched by Employer",
+      subtext: isMatchedCompleted ? "Employer reviewed details" : "Pending employer review",
+      completed: isMatchedCompleted,
     },
     {
-      status: 'shortlisted',
-      label: 'Shortlisted',
-      description: 'You have been shortlisted for an interview',
-      completed: ['shortlisted', 'selected', 'rejected'].includes(application.status),
-      current: application.status === 'shortlisted'
+      id: "shortlisted",
+      label: "Shortlisted for Interview",
+      subtext: isShortlistedCompleted ? "Interview session created" : "Pending shortlist decision",
+      completed: isShortlistedCompleted,
     },
     {
-      status: 'selected',
-      label: 'Final Decision',
-      description: application.status === 'selected' ? 'Congratulations! You got the job' : 'Application processed',
-      completed: application.status === 'selected' || application.status === 'rejected',
-      current: application.status === 'selected' || application.status === 'rejected'
-    }
+      id: "hired",
+      label: "Hired by Employer",
+      subtext: isHiredCompleted ? "Offer letter delivered" : "Pending final selection",
+      completed: isHiredCompleted,
+    },
   ];
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed backdrop-blur-md inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white border border-slate-500 dark:bg-slate-900 dark:border-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                Application Timeline
-              </h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                {application.job_id.title} at {application.job_id.employer_id?.profile?.business_name || 'Company'}
-              </p>
-            </div>
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Blurry Backdrop Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[6px] z-0"
+            onClick={onClose}
+          />
+          
+          {/* Modal Container Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", damping: 28, stiffness: 220 }}
+            className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] z-10 flex flex-col border border-slate-50 dark:border-slate-800 p-8 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              className="absolute top-6 right-6 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 transition-colors border-none cursor-pointer"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-5 h-5 stroke-[2.5]" />
             </button>
-          </div>
-        </div>
 
-        <div className="p-6">
-          {/* Current Status */}
-          <div className="mb-8">
-            <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium ${getStatusColor(application.status)}`}>
-              {getStatusIcon(application.status)}
-              {getStatusLabel(application.status)}
+            {/* Header title */}
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 select-none">
+              Status
+            </h2>
+
+            {/* Job Title and Employer */}
+            <div className="mt-4">
+              <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
+                {job.title}
+              </h1>
+              <p className="text-blue-500 font-semibold text-lg mt-1">
+                {job.employer_id?.profile?.business_name || 'Company'}
+              </p>
             </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-              Applied on {new Date(application.created_at).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </div>
 
-          {/* Timeline */}
-          <div className="space-y-6">
-            {timelineSteps.map((step, index) => (
-              <div key={step.status} className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    step.completed 
-                      ? application.status === 'rejected' && step.status === 'selected'
-                        ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                        : 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
-                      : step.current
-                        ? getStatusColor(application.status).replace('border-', 'bg-').replace('text-', 'text-')
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-                  }`}>
-                    {step.completed ? (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : step.current ? (
-                      getStatusIcon(application.status)
-                    ) : (
-                      <div className="w-2 h-2 rounded-full bg-current"></div>
-                    )}
-                  </div>
-                  {index < timelineSteps.length - 1 && (
-                    <div className={`w-0.5 h-16 mt-2 ${
-                      step.completed ? 'bg-emerald-200 dark:bg-emerald-800' : 'bg-slate-200 dark:bg-slate-700'
-                    }`} />
-                  )}
-                </div>
-                <div className="flex-1 pb-8">
-                  <h3 className={`font-medium ${
-                    step.completed || step.current 
-                      ? 'text-slate-900 dark:text-slate-100' 
-                      : 'text-slate-500 dark:text-slate-400'
-                  }`}>
-                    {step.label}
-                  </h3>
-                  <p className={`text-sm mt-1 ${
-                    step.completed || step.current 
-                      ? 'text-slate-600 dark:text-slate-400' 
-                      : 'text-slate-400 dark:text-slate-500'
-                  }`}>
-                    {step.description}
-                  </p>
-                  {step.current && (
-                    <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      Current stage
-                    </div>
-                  )}
-                </div>
+            {/* Metadata row */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] font-semibold text-slate-400 select-none mt-4">
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
+                <span>{job.location || "Location N/A"}</span>
               </div>
-            ))}
-          </div>
+              
+              <div className="flex items-center gap-1">
+                <CircleDollarSign className="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
+                <span>
+                  {job.salary_min && job.salary_max 
+                    ? `NGN ${job.salary_min.toLocaleString()}/month`
+                    : "Salary N/A"}
+                </span>
+              </div>
 
-          {/* Action Buttons */}
-          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors"
-              >
-                Close
-              </button>
-              {application.status === 'submitted' && (
-                <button
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Withdraw
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                <Briefcase className="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
+                <span>{job.job_type ? (job.job_type === "full_time" ? "Full Time" : job.job_type === "part_time" ? "Part Time" : job.job_type) : "Full Time"}</span>
+              </div>
             </div>
-          </div>
+
+            {/* Timeline Progress box */}
+            <div className="bg-slate-50 dark:bg-slate-950/40 rounded-3xl p-6 mt-6 flex flex-col flex-1">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Progress Timeline
+              </h3>
+              <p className="text-[10px] text-slate-400 font-bold mt-0.5">
+                Estimated Time Delivery is 2:00 PM
+              </p>
+
+              {/* Steps container */}
+              <div className="mt-5 space-y-6 flex-1 flex flex-col justify-between">
+                {timelineSteps.map((step, index) => (
+                  <div key={step.id} className="relative flex gap-4 items-start">
+                    {/* Circle indicators */}
+                    <div className="relative flex flex-col items-center flex-shrink-0">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 border-2 transition-colors duration-300 ${
+                        step.completed
+                          ? "bg-blue-600 border-blue-600 text-white"
+                          : "border-blue-300 bg-white dark:bg-slate-900 text-blue-300"
+                      }`}>
+                        {step.completed ? (
+                          <Check className="w-3.5 h-3.5 stroke-[3.5]" />
+                        ) : (
+                          <div className="w-2 h-2 rounded-full bg-transparent" />
+                        )}
+                      </div>
+                      
+                      {/* Vertical line connector */}
+                      {index < timelineSteps.length - 1 && (
+                        <div className={`absolute top-6 left-3 -ml-0.5 w-0.5 h-10 border-l-2 border-dashed ${
+                          timelineSteps[index + 1].completed 
+                            ? "border-blue-500" 
+                            : "border-slate-200 dark:border-slate-800"
+                        }`} />
+                      )}
+                    </div>
+
+                    {/* Step descriptions */}
+                    <div className="flex flex-col">
+                      <span className={`text-xs font-bold transition-colors ${
+                        step.completed 
+                          ? "text-slate-850 dark:text-slate-100" 
+                          : "text-slate-400 dark:text-slate-600"
+                      }`}>
+                        {step.label}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400/80 mt-0.5 leading-none">
+                        {step.subtext}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

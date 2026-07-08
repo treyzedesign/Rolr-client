@@ -1,23 +1,27 @@
 const steps = [
   {
     step: "01",
-    title: "Create your space",
+    title: "Create Your Space",
     desc: "Sign up as seeker or employer, complete your profile, and publish roles or polish your story.",
+    rotation: "rotate-[2deg]",
   },
   {
     step: "02",
-    title: "Swipe with intent",
+    title: "Swipe with Intent",
     desc: "Browse cards tuned to your market. Every swipe is recorded — left passes, right expresses real interest.",
+    rotation: "rotate-[-2deg]",
   },
   {
     step: "03",
-    title: "Match → voice → message",
+    title: "Match, Audio, Assessment",
     desc: "On a double right swipe, the match channel opens. Share voice samples and coordinate without leaving the app.",
+    rotation: "rotate-[1.5deg]",
   },
   {
     step: "04",
-    title: "Schedule interviews",
-    desc: "Lock in next steps from the same thread. Your interview records stay tied to the originating match.",
+    title: "Schedule Interview",
+    desc: "Lock in next steps from the same thread. Your interview records stay tied to the originating match",
+    rotation: "rotate-[-2deg]",
   },
 ];
 
@@ -25,34 +29,42 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="scroll-mt-24 px-4 py-20 sm:px-6 lg:px-8"
+      className="scroll-mt-24 bg-[#f5f6f8] dark:bg-slate-950 py-24 transition-colors duration-300"
     >
-      <div className="mx-auto max-w-6xl">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-xl">
-            <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-              How WorkSwipe flows
-            </h2>
-            <p className="mt-4 text-lg text-slate-600">
-              Mirrors your PRD: swipes create matches; matches unlock messaging
-              and scheduling.
-            </p>
-          </div>
-          <div className="hidden h-px flex-1 bg-gradient-to-r from-transparent via-sky-500/40 to-transparent md:block md:mx-12 md:mb-4" />
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+        {/* Centered Header */}
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
+            How Rolr flows
+          </h2>
+          <p className="mt-6 text-base sm:text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+            Mirrors your PRD: swipes create matches; matches unlock messaging and scheduling.
+          </p>
         </div>
-        <ol className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+
+        {/* Slanted Cards Grid */}
+        <ol className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 px-2">
           {steps.map((s) => (
             <li
               key={s.step}
-              className="relative rounded-2xl border border-blue-100 bg-white p-6"
+              className={`relative rounded-[20px] bg-white dark:bg-slate-900 p-8 shadow-[0_10px_25px_rgba(0,0,0,0.03)] border border-slate-100 dark:border-slate-800/60 transition-all duration-300 hover:rotate-0 hover:scale-[1.03] hover:shadow-[0_15px_35px_rgba(0,0,0,0.06)] ${s.rotation}`}
             >
-              <span className="font-mono text-xs font-medium tracking-widest text-sky-400">
+              {/* Red Pin Asset at Top-Left */}
+              <img
+                src="/Assets/flow_Pin.png"
+                alt="Pin"
+                className="absolute -top-3.5 -left-3.5 w-9 h-9 select-none pointer-events-none z-10"
+              />
+
+              <span className="font-sans text-lg font-bold text-slate-900 dark:text-slate-100">
                 {s.step}
               </span>
-              <h3 className="font-display mt-3 text-lg font-semibold text-slate-900">
+
+              <h3 className="font-sans mt-3 text-lg font-bold text-slate-900 dark:text-slate-100 leading-snug">
                 {s.title}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+
+              <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                 {s.desc}
               </p>
             </li>

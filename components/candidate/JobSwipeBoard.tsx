@@ -1,95 +1,77 @@
 "use client";
 
-import Link from "next/link";
-import { motion, useAnimation, useDragControls, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, useAnimation, useDragControls, useMotionValue, useTransform } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { X, Heart, Info } from "lucide-react";
-import { JobDetailsModal } from "./JobDetailsModal";
+import { X, Heart, MapPin, Briefcase, CircleDollarSign } from "lucide-react";
 import { swipeJob } from "@/lib/api/swipes";
 import type { Job } from "@/types/job";
 
 interface JobSwipeBoardProps {
   jobs: Job[];
   onSwipe: (jobId: string, accepted: boolean) => void;
+  onViewDetails: (job: Job) => void;
 }
 
-export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
+export function JobSwipeBoard({ jobs, onSwipe, onViewDetails }: JobSwipeBoardProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
   const controls = useAnimation();
   const dragControls = useDragControls();
-  
+
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-30, 0, 30]);
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 0.8, 1, 0.8, 0]);
-  const cardScale = useSpring(1, { stiffness: 300, damping: 30 });
-
-  // Reactive button transforms based on drag position — evaluated every frame
-  const passButtonSize = useTransform(x, [-150, -30, 0], ["4rem", "4rem", "3.5rem"]);
-  const passButtonBg = useTransform(x, [-150, -30, 0], ["#f43f5e", "#f43f5e", "#ffffff"]);
-  const passButtonBorder = useTransform(x, [-150, -30, 0], ["#f43f5e", "#f43f5e", "#f87171"]);
-  const passButtonColor = useTransform(x, [-150, -30, 0], ["#ffffff", "#ffffff", "#f43f5e"]);
-  const passButtonScale = useTransform(x, [-150, -30, 0], [1.2, 1.2, 1]);
-
-  const applyButtonSize = useTransform(x, [0, 30, 150], ["3.5rem", "4rem", "4rem"]);
-  const applyButtonBg = useTransform(x, [0, 30, 150], ["#ffffff", "#10b981", "#10b981"]);
-  const applyButtonBorder = useTransform(x, [0, 30, 150], ["#34d399", "#10b981", "#10b981"]);
-  const applyButtonColor = useTransform(x, [0, 30, 150], ["#10b981", "#ffffff", "#ffffff"]);
-  const applyButtonScale = useTransform(x, [0, 30, 150], [1, 1.2, 1.2]);
+  const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0.5, 0.9, 1, 0.9, 0.5]);
 
   // PASS / APPLY label opacity — reactive to drag
-  const passLabelOpacity = useTransform(x, [-150, -30, 0], [1, 1, 0]);
-  const applyLabelOpacity = useTransform(x, [0, 30, 150], [0, 1, 1]);
+  const passLabelOpacity = useTransform(x, [-120, -30, 0], [1, 0.8, 0]);
+  const applyLabelOpacity = useTransform(x, [0, 30, 120], [0, 0.8, 1]);
+
+  // Dynamically interpolate properties of Card 2 (middle) based on Card 1's drag position x
+  const card2Scale = useTransform(x, [-150, 0, 150], [1, 0.96, 1]);
+  const card2Rotate = useTransform(x, [-150, 0, 150], [0, -4, 0]);
+  const card2X = useTransform(x, [-150, 0, 150], [0, -4, 0]);
+  const card2Y = useTransform(x, [-150, 0, 150], [0, 8, 0]);
+  const card2Opacity = useTransform(x, [-150, 0, 150], [0.95, 0.75, 0.95]);
+
+  // Dynamically interpolate properties of Card 3 (bottom) based on Card 1's drag position x
+  const card3Scale = useTransform(x, [-150, 0, 150], [0.96, 0.93, 0.96]);
+  const card3Rotate = useTransform(x, [-150, 0, 150], [-4, 3, -4]);
+  const card3Opacity = useTransform(x, [-150, 0, 150], [0.6, 0.4, 0.6]);
 
   const topJob = useMemo(() => jobs[0], [jobs]);
   const nextJob = useMemo(() => jobs[1], [jobs]);
 
-  // Check if mobile
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    x.set(0);
+  }, [topJob?._id, x]);
 
-  if (!topJob) {
-    return (
-      <div className="rounded-2xl border border-blue-100 bg-white p-10 text-center text-slate-600">
-        No more jobs matching your current preferences.
-      </div>
-    );
-  }
+  if (!topJob) return null;
 
   const handleSwipe = async (accepted: boolean) => {
     if (!topJob || isSwiping) return;
-    
+
     setIsSwiping(true);
-    
+
     try {
-      // Animate card out immediately - faster transition
+      // Animate card out immediately - fast spring transition
       await controls.start({
         x: accepted ? 300 : -300,
         rotate: accepted ? 30 : -30,
         opacity: 0,
         transition: { type: "spring", stiffness: 600, damping: 20 }
       });
-      
+
       // Notify parent component immediately to show next card
       onSwipe(topJob._id, accepted);
-      
+
       // Call API in background without blocking UI
-      await swipeJob({
+      swipeJob({
         job_id: topJob._id,
         action: accepted ? "right" : "left"
       }).catch(error => {
         console.error("Swipe failed:", error);
       });
-      
+
       // Reset animation controls for next card
       await controls.start({
         x: 0,
@@ -97,25 +79,32 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
         opacity: 1,
         transition: { duration: 0 }
       });
-      
+
     } catch (error) {
-      console.error("Animation failed:", error);
+      console.error("Swipe animation failed:", error);
     } finally {
       setIsSwiping(false);
     }
   };
 
   const formatDescription = (description: string) => {
+    if (typeof window === 'undefined') return description;
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = description;
-    return tempDiv.textContent || tempDiv.innerText || description;
+    let text = tempDiv.textContent || tempDiv.innerText || description;
+
+    // Clamp at a reasonable character length if too long, ending with trailing dots
+    if (text.length > 200) {
+      text = text.substring(0, 185) + '...';
+    }
+    return text;
   };
 
   const handleDragEnd = async () => {
     setIsDragging(false);
     const threshold = 60;
     const currentX = x.get();
-    
+
     if (Math.abs(currentX) > threshold) {
       await handleSwipe(currentX > 0);
     } else {
@@ -129,41 +118,87 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
 
   const handleCardClick = () => {
     if (!isDragging) {
-      setSelectedJob(topJob);
-      setIsModalOpen(true);
+      onViewDetails(topJob);
     }
   };
 
   return (
-    <div className="relative w-full max-w-sm mx-auto min-h-[45vh] max-h-[70vh] overflow-visible">
-      {/* Stack effect - show next card underneath */}
+    <div className="relative w-full max-w-[360px] mx-auto h-[460px] overflow-visible select-none">
+      {/* Card 3 (Bottom Stack) - blank card rotated slightly to the right */}
+      {jobs.length > 2 && (
+        <motion.div
+          className="absolute inset-0 rounded-[2.5rem] border border-slate-100/50 bg-white shadow-[0_4px_15px_rgba(0,0,0,0.015)] dark:border-slate-800 dark:bg-slate-900 pointer-events-none"
+          style={{
+            scale: card3Scale,
+            rotate: card3Rotate,
+            opacity: card3Opacity
+          }}
+        />
+      )}
+
+      {/* Card 2 (Middle Stack) - displays nextJob details dynamically sizing up */}
       {nextJob && (
         <motion.div
-          className="absolute top-0 left-0 right-0 bottom-0 rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50 p-6 shadow-[0_20px_70px_-35px_rgba(59,130,246,0.15)]"
-          animate={{
-            scale: 0.95,
-            y: 10,
-            opacity: 0.7
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 600,
-            damping: 25
+          className="absolute inset-0 rounded-[2.5rem] border border-slate-100 bg-white p-6 shadow-[0_8px_25px_rgba(0,0,0,0.03)] flex flex-col overflow-hidden dark:border-slate-800 dark:bg-slate-900 pointer-events-none"
+          style={{
+            scale: card2Scale,
+            rotate: card2Rotate,
+            x: card2X,
+            y: card2Y,
+            opacity: card2Opacity
           }}
         >
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center">
-              <h3 className="font-display text-xl font-semibold text-slate-900">{nextJob.title}</h3>
-              <p className="mt-1 text-lg font-medium text-blue-700">{nextJob.employer_name}</p>
+          {/* Card Inner Content for Next Job */}
+          <div className="space-y-4 flex-1 flex flex-col opacity-40">
+            {/* Title and Company */}
+            <div>
+              <h3 className="text-2xl font-bold text-slate-900 leading-snug tracking-tight font-sans dark:text-slate-100">
+                {nextJob.title}
+              </h3>
+              <p className="text-blue-600 font-semibold text-base mt-0.5">
+                {nextJob.employer_id?.profile?.business_name || nextJob.employer_name || 'Company'}
+              </p>
+            </div>
+
+            {/* Job Metadata Row */}
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-slate-400 select-none">
+              <div className="flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 stroke-[2.5] text-slate-400" />
+                <span>{nextJob.location || "Location N/A"}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <CircleDollarSign className="h-4 w-4 stroke-[2.5] text-slate-400" />
+                <span>
+                  {nextJob.salary_min && nextJob.salary_max
+                    ? `NGN ${nextJob.salary_min.toLocaleString()} - ${nextJob.salary_max.toLocaleString()}/month`
+                    : "Salary N/A"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Briefcase className="h-4 w-4 stroke-[2.5] text-slate-400" />
+                <span>{nextJob.job_type ? (nextJob.job_type === "full_time" ? "Full Time" : nextJob.job_type === "part_time" ? "Part Time" : nextJob.job_type) : "Full Time"}</span>
+              </div>
+            </div>
+
+            {/* Job Summary */}
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                Job Summary
+              </h4>
+              <p className="text-[13px] text-slate-500 mt-1 leading-relaxed line-clamp-4 dark:text-slate-400">
+                {formatDescription(nextJob.description)}
+              </p>
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Main swipe card */}
+      {/* Card 1 (Top Drag Card) - contentful layout */}
       <motion.div
         key={topJob._id}
-        className="relative h-full rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50 p-4 mb-6 shadow-[0_20px_70px_-35px_rgba(59,130,246,0.35)] cursor-grab active:cursor-grabbing flex flex-col overflow-hidden"
+        className="absolute inset-0 rounded-[2.5rem] border border-slate-100 bg-white p-6 pb-20 shadow-[0_15px_45px_rgba(0,0,0,0.05)] cursor-grab active:cursor-grabbing flex flex-col justify-between overflow-hidden dark:border-slate-800 dark:bg-slate-900"
         style={{ x, rotate, opacity }}
         drag="x"
         dragControls={dragControls}
@@ -177,62 +212,65 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
         onClick={handleCardClick}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs uppercase tracking-[0.2em] text-blue-600">Swipe card</p>
-          <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-700">
-            {jobs.length} left
-          </span>
-        </div>
-        
-        {/* Job content */}
-        <div className="rounded-2xl border border-blue-100 bg-white p-4 flex-1 flex flex-col">
-          <div className="mb-3">
-            <h3 className="font-display text-2xl font-semibold text-slate-900">{topJob.title}</h3>
-            <p className="mt-1 text-lg font-medium text-blue-700">
+        {/* Card Inner Content */}
+        <div className="space-y-4 flex-1 flex flex-col">
+          {/* Title and Company */}
+          <div>
+            <h3 className="text-2xl font-bold text-slate-900 leading-snug tracking-tight font-sans dark:text-slate-100">
+              {topJob.title}
+            </h3>
+            <p className="text-blue-600 font-semibold text-base mt-0.5">
               {topJob.employer_id?.profile?.business_name || topJob.employer_name || 'Company'}
             </p>
-            <p className="mt-2 text-sm text-slate-600">{topJob.location}</p>
-          </div>
-          
-          <div className="mb-3">
-            {topJob.salary_min && topJob.salary_max && (
-              <span className="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 my-1 text-sm font-medium text-emerald-700">
-                ${topJob.salary_min.toLocaleString()} - ${topJob.salary_max.toLocaleString()}
-              </span>
-            )}
-            <span className="ml-2 inline-block rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-              {topJob.job_type?.replace('_', ' ') || 'N/A'}
-            </span>
-            <span className="ml-2 inline-block rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-sm font-medium text-purple-700">
-              {topJob.experience_level}
-            </span>
           </div>
 
-          <div className="flex-1 overflow-hidden">
-            <div 
-              className="text-sm text-slate-700 line-clamp-8" 
-              dangerouslySetInnerHTML={{ __html: topJob.description }}
-            />
+          {/* Job Metadata Row */}
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-slate-400 select-none">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 stroke-[2.5] text-slate-400" />
+              <span>{topJob.location || "Location N/A"}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <CircleDollarSign className="h-4 w-4 stroke-[2.5] text-slate-400" />
+              <span>
+                {topJob.salary_min && topJob.salary_max
+                  ? `NGN ${topJob.salary_min.toLocaleString()} - ${topJob.salary_max.toLocaleString()}/month`
+                  : "Salary N/A"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Briefcase className="h-4 w-4 stroke-[2.5] text-slate-400" />
+              <span>{topJob.job_type ? (topJob.job_type === "full_time" ? "Full Time" : topJob.job_type === "part_time" ? "Part Time" : topJob.job_type) : "Full Time"}</span>
+            </div>
           </div>
-          
+
+          {/* Job Summary */}
+          <div>
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+              Job Summary
+            </h4>
+            <p className="text-[13px] text-slate-500 mt-1 leading-relaxed line-clamp-4 dark:text-slate-400">
+              {formatDescription(topJob.description)}
+            </p>
+          </div>
+
+          {/* Skills */}
           {topJob.required_skills && topJob.required_skills.length > 0 && (
-            <div className="mt-3">
-              <h4 className="mb-2 text-sm font-semibold text-slate-900">Required Skills:</h4>
-              <div className="flex flex-wrap gap-2">
-                {topJob.required_skills.slice(0, 3).map((skill) => (
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                Skills
+              </h4>
+              <div className="flex flex-wrap gap-2 mt-2 select-none">
+                {topJob.required_skills.slice(0, 4).map((skill) => (
                   <span
                     key={skill}
-                    className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs text-slate-700"
+                    className="px-3.5 py-1.5 bg-blue-50 text-blue-600 text-[11px] font-bold rounded-full dark:bg-blue-950/20 dark:text-blue-400"
                   >
                     {skill}
                   </span>
                 ))}
-                {topJob.required_skills.length > 3 && (
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-500">
-                    +{topJob.required_skills.length - 3} more
-                  </span>
-                )}
               </div>
             </div>
           )}
@@ -240,7 +278,7 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
 
         {/* PASS label — top-left, reactive to leftward drag */}
         <motion.div
-          className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-lg shadow font-bold text-xs pointer-events-none"
+          className="absolute top-6 left-6 bg-[#f82c4f] text-white px-3.5 py-1.5 rounded-lg shadow font-bold text-xs pointer-events-none tracking-wider rotate-[-12deg]"
           style={{ opacity: passLabelOpacity }}
         >
           PASS
@@ -248,68 +286,56 @@ export function JobSwipeBoard({ jobs, onSwipe }: JobSwipeBoardProps) {
 
         {/* APPLY label — top-right, reactive to rightward drag */}
         <motion.div
-          className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-lg shadow font-bold text-xs pointer-events-none"
+          className="absolute top-6 right-6 bg-[#2563eb] text-white px-3.5 py-1.5 rounded-lg shadow font-bold text-xs pointer-events-none tracking-wider rotate-[12deg]"
           style={{ opacity: applyLabelOpacity }}
         >
           APPLY
         </motion.div>
       </motion.div>
-      
-      {/* Action buttons */}
-      <div className="sticky bottom-2 left-0 right-0 flex justify-center items-center gap-6 px-6">
-        {/* Pass / X button — grows and fills red when swiping left */}
-        <motion.button
-          type="button"
-          onClick={() => handleSwipe(false)}
-          disabled={isSwiping}
-          className="rounded-full border-2 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            width: passButtonSize,
-            height: passButtonSize,
-            backgroundColor: passButtonBg,
-            borderColor: passButtonBorder,
-            color: passButtonColor,
-            scale: passButtonScale,
-          }}
-        >
-          <X className="w-7 h-7" strokeWidth={3} />
-        </motion.button>
 
-        <Link
-          href={`/candidate/jobs/${topJob._id}`}
-          className="w-14 h-14 rounded-full border-2 border-blue-400 bg-white text-blue-500 transition-all hover:bg-blue-50 hover:border-blue-500 hover:scale-110 flex items-center justify-center shadow-lg"
-        >
-          <Info className="w-7 h-7" strokeWidth={3} />
-        </Link>
-
-        {/* Apply / Heart button — grows and fills green when swiping right */}
-        <motion.button
+      {/* Static Swipe Control Buttons overlaying the bottom of the card stack */}
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center items-center gap-5 select-none z-25">
+        {/* Reject button - Solid red */}
+        <button
           type="button"
-          onClick={() => handleSwipe(true)}
-          disabled={isSwiping}
-          className="rounded-full border-2 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            width: applyButtonSize,
-            height: applyButtonSize,
-            backgroundColor: applyButtonBg,
-            borderColor: applyButtonBorder,
-            color: applyButtonColor,
-            scale: applyButtonScale,
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSwipe(false);
           }}
+          disabled={isSwiping}
+          className="w-12 h-12 rounded-full bg-[#f82c4f] text-white flex items-center justify-center shadow-[0_4px_12px_rgba(248,44,79,0.3)] hover:scale-115 active:scale-90 transition-all cursor-pointer border-none"
+          aria-label="Pass Job"
         >
-          <Heart className="w-7 h-7" strokeWidth={3} />
-        </motion.button>
+          <X className="w-5 h-5 stroke-[3px]" />
+        </button>
+
+        {/* Info details button - Solid grey */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewDetails(topJob);
+          }}
+          className="w-12 h-12 rounded-full bg-[#e6e8eb] dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center font-serif text-lg font-bold shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:scale-115 active:scale-90 transition-all cursor-pointer border-none"
+          aria-label="Job Details"
+        >
+          i
+        </button>
+
+        {/* Like/Apply button - Solid blue */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSwipe(true);
+          }}
+          disabled={isSwiping}
+          className="w-12 h-12 rounded-full bg-[#2563eb] text-white flex items-center justify-center shadow-[0_4px_12px_rgba(37,99,235,0.3)] hover:scale-115 active:scale-90 transition-all cursor-pointer border-none"
+          aria-label="Apply Job"
+        >
+          <Heart className="w-5 h-5 fill-white stroke-[2.5]" />
+        </button>
       </div>
-      
-      {/* Job Details Modal */}
-      <JobDetailsModal 
-        job={selectedJob}
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedJob(null);
-        }}
-      />
     </div>
   );
 }

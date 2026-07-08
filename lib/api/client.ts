@@ -45,15 +45,21 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.log(error);
+    console.error("Response Error:", {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
 
     if (error.response?.status === 401) {
       // Clear auth cookies on 401 error
       const { clearAuthCookies } = require("@/lib/cookies");
       clearAuthCookies();
       // Redirect to login
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
       }
     }
     

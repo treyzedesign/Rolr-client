@@ -21,6 +21,7 @@ export interface InterviewSession {
     _id: string;
     title: string;
     description: string;
+    required_skills?: string[];
   };
   profile_id: {
     _id: string;
@@ -84,6 +85,7 @@ export interface CandidateInterviewSession {
     _id: string;
     title: string;
     description: string;
+    required_skills?: string[];
   };
   answers: Array<{
     question_index: number;

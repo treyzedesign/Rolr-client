@@ -27,7 +27,7 @@ export default function CandidateLayout({ children }: { children: ReactNode }) {
             onMobileMenuClose={handleMobileMenuClose}
           />
           <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="w-full px-6 py-6 md:py-8 md:pr-12 md:pl-6">
               {children}
             </div>
           </main>
