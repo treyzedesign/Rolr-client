@@ -23,7 +23,7 @@ export function Testimonials() {
             {/* Testimonial 1 */}
             <div className="bg-[#f5f6f8] dark:bg-slate-900 rounded-[24px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.005)] border border-slate-100 dark:border-slate-800/40 flex flex-col justify-between flex-1">
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                "The platform makes candidate screening faster and reduces manual work. The AI matching is generally accurate, and the interface is easy to use."
+                "I swiped on a remote customer support specialist role, matched instantly, and completed my voice screening. Within a week, I was scheduled for interviews and landed my dream remote-ready job!"
               </p>
               <div className="border-t border-slate-200/80 dark:border-slate-800/80 mt-6 pt-6 flex items-center justify-between">
                 <div className="flex items-center gap-3.5">
@@ -34,7 +34,7 @@ export function Testimonials() {
                   />
                   <div>
                     <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-tight">
-                      Tom Tom.
+                      Amara Nwachukwu
                     </h4>
                     <p className="text-xs sm:text-sm text-slate-400 font-medium">
                       Job Seeker
@@ -52,7 +52,7 @@ export function Testimonials() {
             {/* Testimonial 2 */}
             <div className="bg-[#f5f6f8] dark:bg-slate-900 rounded-[24px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.005)] border border-slate-100 dark:border-slate-800/40 flex flex-col justify-between flex-1">
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                "The platform makes candidate screening faster and reduces manual work. The AI matching is generally accurate, and the interface is easy to use."
+                "DevFlow saved dozens of hours hiring remote-ready support representatives. We swiped through qualified candidates, listened to their audio responses, and built a global customer service team in record time."
               </p>
               <div className="border-t border-slate-200/80 dark:border-slate-800/80 mt-6 pt-6 flex items-center justify-between">
                 <div className="flex items-center gap-3.5">
@@ -63,10 +63,10 @@ export function Testimonials() {
                   />
                   <div>
                     <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-tight">
-                      Tom Tom.
+                      Marcus Chen
                     </h4>
                     <p className="text-xs sm:text-sm text-slate-400 font-medium">
-                      Employer
+                      Employer (CEO, DevFlow)
                     </p>
                   </div>
                 </div>
@@ -124,7 +124,7 @@ export function Testimonials() {
             {/* Testimonial 3 */}
             <div className="bg-[#f5f6f8] dark:bg-slate-900 rounded-[24px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.005)] border border-slate-100 dark:border-slate-800/40 flex flex-col justify-between flex-1">
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                "The platform makes candidate screening faster and reduces manual work. The AI matching is generally accurate, and the interface is easy to use."
+                "Hiring for administrative assistants and executive roles used to take weeks. With Rolr's AI match, we found remote-ready admin professionals who fit our business needs immediately."
               </p>
               <div className="border-t border-slate-200/80 dark:border-slate-800/80 mt-6 pt-6 flex items-center justify-between">
                 <div className="flex items-center gap-3.5">
@@ -135,10 +135,10 @@ export function Testimonials() {
                   />
                   <div>
                     <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-tight">
-                      Tom Tom.
+                      Sophia Patel
                     </h4>
                     <p className="text-xs sm:text-sm text-slate-400 font-medium">
-                      Employer
+                      Employer (HR Director)
                     </p>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export function Testimonials() {
             {/* Testimonial 4 */}
             <div className="bg-[#f5f6f8] dark:bg-slate-900 rounded-[24px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.005)] border border-slate-100 dark:border-slate-800/40 flex flex-col justify-between flex-1">
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                "The platform makes candidate screening faster and reduces manual work. The AI matching is generally accurate, and the interface is easy to use."
+                "Finding a remote office coordinator or executive admin assistant role was so smooth here. Vetting companies via swipe and voice screen made me stand out as a remote-ready candidate."
               </p>
               <div className="border-t border-slate-200/80 dark:border-slate-800/80 mt-6 pt-6 flex items-center justify-between">
                 <div className="flex items-center gap-3.5">
@@ -164,7 +164,7 @@ export function Testimonials() {
                   />
                   <div>
                     <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-tight">
-                      Tom Tom.
+                      David Aina
                     </h4>
                     <p className="text-xs sm:text-sm text-slate-400 font-medium">
                       Job Seeker

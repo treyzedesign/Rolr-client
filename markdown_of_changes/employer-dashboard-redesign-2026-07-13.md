@@ -106,12 +106,18 @@ Redesigned the employer dashboard page (`app/employer/page.tsx`) to match the pr
 
 - **[Auth Page Mobile Optimizations]**:
   - Relocated absolute positioned mobile logo block in [app/login/page.tsx](file:///c:/Users/User/Desktop/workswipe_client/app/login/page.tsx), [app/register/page.tsx](file:///c:/Users/User/Desktop/workswipe_client/app/register/page.tsx), and [app/register/job-seeker/page.tsx](file:///c:/Users/User/Desktop/workswipe_client/app/register/job-seeker/page.tsx) inside the relative flex container, centering it above the card block. This prevents overlap/jamming with centered titles on small mobile viewports.
+- **[Testimonials.tsx](file:///c:/Users/User/Desktop/workswipe_client/components/landing/Testimonials.tsx)** (Lines 23-180):
+  - Updated placeholder testimonies with unique names and roles (Amara Nwachukwu, Marcus Chen, Sophia Patel, David Aina).
+  - Refined all 4 testimonials to focus specifically on remote-ready, administrative assistance, and customer support recruitment stories.
+- **[Hero.tsx](file:///c:/Users/User/Desktop/workswipe_client/components/landing/Hero.tsx)** (Lines 43-102):
+  - Removed incorrect references to "live messaging" or "match messaging".
+  - Replaced with accurate text highlighting the automated "AI assessment" feature.
 
 ## Commit Draft - Short
-`feat: fix auth page mobile logo overlap and header layouts`
+`feat: refine landing hero description and statistics to highlight AI assessment`
 
 ## Commit Draft - Long
+- Updated landing page Hero description and stat boxes to remove references to messaging and focus on automated AI assessment.
+- Tailored landing page testimonials to highlight remote-ready, customer support, and administrative staffing solutions.
 - Fixed absolute mobile logo overlap in registration, job seeker registration, and login page viewports by nesting inside the content flex container.
 - Optimized candidate and employer workspace page headers to hide duplicate controls (ThemeToggle, Bell, user badge) on mobile sizes.
-- Overhauled candidate and employer layouts with state-driven logout confirmation modals.
-- Redesigned the Company Profile workspace with a multi-step setup wizard, progress checklist, and inline card editors.

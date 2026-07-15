@@ -41,7 +41,7 @@ export function Hero() {
             
             <p className="mt-8 max-w-xl text-base sm:text-lg leading-relaxed text-slate-600 dark:text-slate-300">
               A fast, visual discovery layer for jobs and talent. Voice screening and
-              instant messaging activate the moment both sides swipe right.
+              automated AI assessment activate the moment both sides swipe right.
             </p>
             
             <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -94,10 +94,10 @@ export function Hero() {
             </div>
             <div className="flex flex-col items-center">
               <span className="text-2xl sm:text-3xl font-extrabold text-[#2782FF] tracking-tight transition-transform duration-300 hover:scale-105">
-                Live
+                AI
               </span>
               <span className="mt-2 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-                Match Messaging
+                Assessment
               </span>
             </div>
           </div>
