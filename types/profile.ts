@@ -56,7 +56,7 @@ export interface ProfileResponse {
   profile: CandidateProfile | EmployerProfile;
 }
 
-export interface ProfileUpdateRequest extends Partial<CandidateProfile> {}
+export interface ProfileUpdateRequest extends Partial<CandidateProfile>, Partial<EmployerProfile> {}
 
 // For FormData uploads (like resume)
 export type ProfileUpdateData = ProfileUpdateRequest | FormData;

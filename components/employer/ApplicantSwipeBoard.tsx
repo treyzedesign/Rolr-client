@@ -2,7 +2,7 @@
 
 import { motion, useAnimation, useDragControls, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { X, Heart, Info, MapPin, Briefcase, GraduationCap, DollarSign, Play, Pause, Volume2 } from "lucide-react";
+import { X, Heart, Info, MapPin, Briefcase, GraduationCap, Volume2, Play, Pause } from "lucide-react";
 import { ApplicantProfileModal } from "./ApplicantProfileModal";
 import { swipeCandidate } from "@/lib/api/swipes";
 import type { JobApplicant } from "@/types/job";
@@ -14,7 +14,6 @@ interface ApplicantSwipeBoardProps {
 
 export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoardProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioLoaded, setAudioLoaded] = useState(false);
@@ -26,29 +25,14 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-30, 0, 30]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 0.8, 1, 0.8, 0]);
-  const cardScale = useSpring(1, { stiffness: 300, damping: 30 });
-
-  // Reactive button transforms based on drag position
-  const passButtonSize = useTransform(x, [-150, -30, 0], ["4rem", "4rem", "3.5rem"]);
-  const passButtonBg = useTransform(x, [-150, -30, 0], ["#f43f5e", "#f43f5e", "#ffffff"]);
-  const passButtonBorder = useTransform(x, [-150, -30, 0], ["#f43f5e", "#f43f5e", "#f87171"]);
-  const passButtonColor = useTransform(x, [-150, -30, 0], ["#ffffff", "#ffffff", "#f43f5e"]);
-  const passButtonScale = useTransform(x, [-150, -30, 0], [1.2, 1.2, 1]);
-
-  const acceptButtonSize = useTransform(x, [0, 30, 150], ["3.5rem", "4rem", "4rem"]);
-  const acceptButtonBg = useTransform(x, [0, 30, 150], ["#ffffff", "#10b981", "#10b981"]);
-  const acceptButtonBorder = useTransform(x, [0, 30, 150], ["#34d399", "#10b981", "#10b981"]);
-  const acceptButtonColor = useTransform(x, [0, 30, 150], ["#10b981", "#ffffff", "#ffffff"]);
-  const acceptButtonScale = useTransform(x, [0, 30, 150], [1, 1.2, 1.2]);
 
   // PASS / ACCEPT label opacity
-  const passLabelOpacity = useTransform(x, [-150, -30, 0], [1, 1, 0]);
-  const acceptLabelOpacity = useTransform(x, [0, 30, 150], [0, 1, 1]);
+  const passLabelOpacity = useTransform(x, [-120, -30, 0], [1, 0.8, 0]);
+  const acceptLabelOpacity = useTransform(x, [0, 30, 120], [0, 0.8, 1]);
 
   const topApplicant = useMemo(() => applicants[0], [applicants]);
   const nextApplicant = useMemo(() => applicants[1], [applicants]);
 
-  // Voice player functions
   const togglePlayPause = () => {
     if (!audioRef.current || !topApplicant.job_seeker_id?.profile?.voice_intro_url) return;
     
@@ -69,17 +53,6 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
     setIsPlaying(false);
   };
 
-  // Check if mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Cleanup audio when applicant changes
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -90,7 +63,7 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
 
   if (!topApplicant || !topApplicant.job_seeker_id?.profile) {
     return (
-      <div className="rounded-2xl border border-blue-100 bg-white p-10 text-center text-slate-600">
+      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-500 max-w-sm shadow-sm select-none">
         No more applicants to review for this job.
       </div>
     );
@@ -102,18 +75,15 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
     setIsSwiping(true);
     
     try {
-      // Animate card out immediately
       await controls.start({
-        x: accepted ? 300 : -300,
-        rotate: accepted ? 30 : -30,
+        x: accepted ? 350 : -350,
+        rotate: accepted ? 25 : -25,
         opacity: 0,
-        transition: { type: "spring", stiffness: 600, damping: 20 }
+        transition: { type: "spring", stiffness: 450, damping: 25 }
       });
       
-      // Notify parent component immediately to show next card
       onSwipe(topApplicant._id, accepted);
       
-      // Call API to record the swipe
       await swipeCandidate({
         candidate_id: topApplicant.job_seeker_id?._id,
         action: accepted ? "right" : "left"
@@ -121,7 +91,6 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
         console.error("Swipe API failed:", error);
       });
       
-      // Reset animation controls for next card
       await controls.start({
         x: 0,
         rotate: 0,
@@ -138,7 +107,7 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
 
   const handleDragEnd = async () => {
     setIsDragging(false);
-    const threshold = 60;
+    const threshold = 80;
     const currentX = x.get();
     
     if (Math.abs(currentX) > threshold) {
@@ -147,7 +116,7 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
       await controls.start({
         x: 0,
         rotate: 0,
-        transition: { type: "spring", stiffness: 600, damping: 25 }
+        transition: { type: "spring", stiffness: 500, damping: 25 }
       });
     }
   };
@@ -158,59 +127,48 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
     }
   };
 
-  const profile = topApplicant.job_seeker_id?.profile;
+  const profile = topApplicant.job_seeker_id.profile;
+  const applicantName = `${profile.first_name || "Helen"} ${profile.last_name || "Coker"}`;
+  const applicantRole = topApplicant.job_id?.title || profile.job_category || "Virtual Assistant";
+
+  // Dynamic but stable match score mock
+  const matchScore = profile.first_name ? (75 + (profile.first_name.length % 20)) : 80;
 
   return (
-    <div className="relative w-full max-w-sm mx-auto min-h-[60vh] max-h-[75vh] overflow-visible">
-      {/* Stack effect - show next card underneath */}
+    <div className="relative w-[400px] h-[520px] mx-auto select-none overflow-visible">
+      {/* Background card stack effect */}
       {nextApplicant && nextApplicant.job_seeker_id?.profile && (
-        <motion.div
-          className="absolute top-0 left-0 right-0 bottom-0 rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50 p-6 shadow-[0_20px_70px_-35px_rgba(59,130,246,0.15)]"
-          animate={{
-            scale: 0.95,
-            y: 10,
-            opacity: 0.7
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 600,
-            damping: 25
-          }}
-        >
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center">
-              <h3 className="font-display text-xl font-semibold text-slate-900">
-                {nextApplicant.job_seeker_id?.profile?.first_name} {nextApplicant.job_seeker_id?.profile?.last_name || 'Applicant'}
-              </h3>
-              <p className="mt-1 text-lg font-medium text-blue-700">Next Applicant</p>
-            </div>
-          </div>
-        </motion.div>
+        <div className="absolute top-2 left-0 right-0 bottom-0 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm scale-95 opacity-70 translate-y-3 pointer-events-none select-none z-0" />
       )}
 
-      {/* Main swipe card */}
+      {/* Main Drag Card */}
       <motion.div
         key={topApplicant._id}
-        className="relative h-full rounded-3xl border border-blue-100 bg-white mb-6 shadow-[0_20px_70px_-35px_rgba(59,130,246,0.35)] cursor-grab active:cursor-grabbing overflow-hidden"
+        className="absolute inset-0 rounded-3xl border border-slate-155 dark:border-slate-800/80 bg-white dark:bg-slate-950 shadow-md cursor-grab active:cursor-grabbing overflow-hidden z-10"
         style={{ x, rotate, opacity }}
         drag="x"
         dragControls={dragControls}
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.4}
+        dragElastic={0.5}
         dragMomentum={false}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={handleDragEnd}
         animate={controls}
-        whileTap={{ scale: 0.96 }}
+        whileTap={{ scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
         onClick={handleCardClick}
       >
+        {/* Match score pill (Mockup top left) */}
+        {/* <div className="absolute top-4 left-4 bg-black/80 text-white text-[10px] font-bold px-3 py-1 rounded-full z-20 pointer-events-none select-none">
+          {matchScore}% Match
+        </div> */}
+
         {/* Profile Image Background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/25 to-black/90">
           {profile?.profile_image_url ? (
             <img
               src={profile.profile_image_url}
-              alt={`${profile.first_name} ${profile.last_name}`}
+              alt={applicantName}
               className="w-full h-full object-cover"
             />
           ) : (
@@ -218,86 +176,56 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
           )}
         </div>
 
-        {/* Header overlay */}
-        <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/90">Applicant Card</p>
-            <span className="rounded-full border border-white/20 bg-white/10 backdrop-blur-sm px-3 py-1 text-xs text-white">
-              {applicants.length} left
-            </span>
-          </div>
-        </div>
-
-
-        {/* Applicant Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 pb-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-          <div className="text-white">
-            <h3 className="font-display text-3xl font-bold mb-1">
-              {profile?.first_name} {profile?.last_name}
+        {/* Info overlay inside card bottom (Name, Role, Audio Player, Actions) */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 pt-32 bg-gradient-to-t from-black/95 via-black/40 to-transparent text-white z-10 select-none flex flex-col gap-4">
+          
+          {/* Candidate Info Details */}
+          <div>
+            <h3 className="text-xl font-bold tracking-tight">
+              {applicantName}
             </h3>
-            {/* <p className="text-white/90 mb-3">{topApplicant.job_seeker_id.email}</p> */}
-            
-            <div className="flex flex-wrap gap-2 mb-3">
-              {profile?.location && (
-                <span className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-sm text-white/90">
-                  <MapPin className="w-3 h-3 mr-1" />
-                  {profile.location}
-                </span>
-              )}
-              {profile?.experience_level && (
-                <span className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-sm text-white/90">
-                  <Briefcase className="w-3 h-3 mr-1" />
-                  {profile.experience_level}
-                </span>
-              )}
-              {profile?.job_category && (
-                <span className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-sm text-white/90">
-                  <GraduationCap className="w-3 h-3 mr-1" />
-                  {profile.job_category}
-                </span>
-              )}
-            </div>
-
-            {/* {profile?.employment_status && (
-              <p className="text-sm text-white/80">
-                Status: <span className="text-white/90">{profile.employment_status}</span>
-              </p>
-            )} */}
+            <p className="text-xs text-white/95 font-medium mt-0.5">
+              {applicantRole}
+            </p>
+            {profile.location && (
+              <div className="flex items-center gap-1 mt-2 text-[10px] text-white/80 font-medium">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{profile.location}</span>
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Voice Player Overlay - Bottom with Transparent Background */}
-        {profile?.voice_intro_url && (
-          <div className="absolute bottom-6 left-6 right-6">
-            <div className="bg-transparent border border-white/20 rounded-2xl p-4">
+          {/* Voice Bio Player (Positioned just above action buttons) */}
+          {profile?.voice_intro_url && (
+            <div className="bg-black/10 border border-white/5 rounded-2xl p-2.5 backdrop-blur-[2px]">
               <div className="flex items-center gap-3">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     togglePlayPause();
                   }}
-                  className="w-10 h-10 rounded-full bg-white/10 border border-white/30 flex items-center justify-center hover:bg-white/20 transition-colors"
+                  className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all active:scale-90 cursor-pointer"
                 >
                   {isPlaying ? (
-                    <Pause className="w-4 h-4 text-white" />
+                    <Pause className="w-3.5 h-3.5 text-white" />
                   ) : (
-                    <Play className="w-4 h-4 text-white ml-0.5" />
+                    <Play className="w-3.5 h-3.5 text-white ml-0.5" />
                   )}
                 </button>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Volume2 className="w-3 h-3 text-white/80" />
-                    <span className="text-xs text-white/90">Voice Introduction</span>
+                  <div className="flex items-center gap-1.5 mb-1 select-none">
+                    <Volume2 className="w-3.5 h-3.5 text-white/80" />
+                    <span className="text-[10px] text-white/95 font-bold uppercase tracking-wider">Voice Intro</span>
                   </div>
-                  {/* Simple equalizer visualization */}
-                  <div className="flex items-center gap-1 h-4">
-                    {[...Array(5)].map((_, i) => (
+                  {/* Equalizer animation */}
+                  <div className="flex items-end gap-1.5 h-3 pb-0.5">
+                    {[...Array(6)].map((_, i) => (
                       <motion.div
                         key={i}
-                        className="flex-1 bg-white/40 rounded-full"
-                        style={{ height: '2px' }}
+                        className="flex-1 bg-white/50 rounded-full"
+                        style={{ height: '3px' }}
                         animate={{
-                          height: isPlaying ? `${Math.random() * 16 + 2}px` : '2px',
+                          height: isPlaying ? `${Math.random() * 12 + 3}px` : '3px',
                         }}
                         transition={{
                           duration: 0.3,
@@ -310,72 +238,64 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* PASS label — top-left, reactive to leftward drag */}
+          {/* Action buttons centered inside the card overlay (positioned below the audio player) */}
+          <div className="flex items-center justify-center gap-4 pt-1">
+            {/* Reject button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSwipe(false);
+              }}
+              className="w-12 h-12 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 border-none cursor-pointer"
+              title="Reject Candidate"
+            >
+              <X className="w-5 h-5" strokeWidth={3} />
+            </button>
+
+            {/* Profile Info button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCardClick();
+              }}
+              className="w-12 h-12 bg-slate-500 hover:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 border-none cursor-pointer"
+              title="View Details"
+            >
+              <span className="text-lg font-bold">i</span>
+            </button>
+
+            {/* Match / Approve button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSwipe(true);
+              }}
+              className="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 border-none cursor-pointer"
+              title="Match Candidate"
+            >
+              <Heart className="w-5 h-5 fill-current" strokeWidth={3} />
+            </button>
+          </div>
+
+        </div>
+
+        {/* Drag overlays (PASS/ACCEPT labels) */}
         <motion.div
-          className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-lg shadow font-bold text-xs pointer-events-none"
+          className="absolute top-4 right-4 bg-rose-500 text-white px-3.5 py-1.5 rounded-lg shadow font-extrabold text-[10px] pointer-events-none select-none z-20"
           style={{ opacity: passLabelOpacity }}
         >
           PASS
         </motion.div>
-
-        {/* ACCEPT label — top-right, reactive to rightward drag */}
+        
         <motion.div
-          className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-lg shadow font-bold text-xs pointer-events-none"
+          className="absolute top-4 left-4 bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg shadow font-extrabold text-[10px] pointer-events-none select-none z-20"
           style={{ opacity: acceptLabelOpacity }}
         >
           ACCEPT
         </motion.div>
       </motion.div>
-      
-      {/* Action buttons */}
-      <div className="sticky bottom-2 left-0 right-0 flex justify-center items-center gap-6 px-6">
-        {/* Pass / X button */}
-        <motion.button
-          type="button"
-          onClick={() => handleSwipe(false)}
-          disabled={isSwiping}
-          className="rounded-full border-2 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            width: passButtonSize,
-            height: passButtonSize,
-            backgroundColor: passButtonBg,
-            borderColor: passButtonBorder,
-            color: passButtonColor,
-            scale: passButtonScale,
-          }}
-        >
-          <X className="w-7 h-7" strokeWidth={3} />
-        </motion.button>
-
-        <button
-          type="button"
-          onClick={handleCardClick}
-          className="w-14 h-14 rounded-full border-2 border-blue-400 bg-white text-blue-500 transition-all hover:bg-blue-50 hover:border-blue-500 hover:scale-110 flex items-center justify-center shadow-lg"
-        >
-          <Info className="w-7 h-7" strokeWidth={3} />
-        </button>
-
-        {/* Accept / Heart button */}
-        <motion.button
-          type="button"
-          onClick={() => handleSwipe(true)}
-          disabled={isSwiping}
-          className="rounded-full border-2 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            width: acceptButtonSize,
-            height: acceptButtonSize,
-            backgroundColor: acceptButtonBg,
-            borderColor: acceptButtonBorder,
-            color: acceptButtonColor,
-            scale: acceptButtonScale,
-          }}
-        >
-          <Heart className="w-7 h-7" strokeWidth={3} />
-        </motion.button>
-      </div>
 
       {/* Hidden Audio Element */}
       {profile?.voice_intro_url && (

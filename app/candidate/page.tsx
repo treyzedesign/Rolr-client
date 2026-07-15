@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useProfileStore } from "@/stores/profile-store";
 import { getDashboardStats, DashboardStatsResponse } from "@/lib/api/users";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { 
   Bell, 
   ArrowRight, 
@@ -126,7 +127,7 @@ export default function CandidateDashboard() {
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            Good Morning, {candidateName}!
+            Welcome, {candidateName}!
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Discover your next opportunity with our swipe-based job discovery
@@ -134,7 +135,8 @@ export default function CandidateDashboard() {
         </div>
         
         {/* Top-Right Info & Actions Bar */}
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="hidden md:flex flex-wrap items-center gap-4">
+          <ThemeToggle />
           {/* Notification Bell */}
           <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-all shadow-sm">
             <Bell className="h-5 w-5" />

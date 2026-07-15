@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, AlertCircle, UserCheck, Clock, Plus, Trash2 } from "lucide-react";
+import { X, Calendar, AlertCircle, UserCheck, Clock, Plus, Trash2, Loader2 } from "lucide-react";
 import type { InterviewSession } from "@/lib/api/interviews";
 import toast from "react-hot-toast";
 
@@ -94,21 +94,16 @@ export function ShortlistModal({ session, isOpen, onClose, onConfirm }: Shortlis
       const slots = [];
       const current = new Date(start);
 
-      // Loop through each day from start date to end date
       while (current <= end) {
-        // Loop through each defined time block for this day
         for (const block of timeBlocks) {
-          // Construct Start Datetime for this day
           const [sh, sm] = block.start.split(':').map(Number);
           const slotStart = new Date(current);
           slotStart.setHours(sh, sm, 0, 0);
           
-          // Construct End Datetime for this day
           const [eh, em] = block.end.split(':').map(Number);
           const slotEnd = new Date(current);
           slotEnd.setHours(eh, em, 0, 0);
 
-          // Ensure time is valid
           if (slotEnd <= slotStart) {
             toast.error("End time must be after start time for all blocks.");
             setIsSubmitting(false);
@@ -133,184 +128,202 @@ export function ShortlistModal({ session, isOpen, onClose, onConfirm }: Shortlis
     }
   };
 
-  // Calculate how many slots will be generated
   const daysCount = (startDate && endDate) 
     ? Math.max(0, Math.floor((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)
     : 0;
   
   const totalSlotsCount = daysCount * timeBlocks.length;
+  const candName = `${session.profile_id?.first_name || "Helen"} ${session.profile_id?.last_name || "Coker"}`;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop blur overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
             onClick={onClose}
           />
 
           {/* Modal Container */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]"
+              exit={{ opacity: 0, scale: 0.96, y: 15 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] shadow-2xl max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh] select-none relative"
             >
-              {/* Header */}
-              <div className="border-b border-slate-200 p-6 flex justify-between items-center bg-slate-50 shrink-0">
+              
+              {/* Close Button top right */}
+              <button
+                onClick={onClose}
+                className="absolute top-6 right-6 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-lg transition-colors border-none bg-transparent cursor-pointer z-20"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+
+              {/* Scrollable Content Container */}
+              <div className="p-8 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+                
+                {/* Header Title Section */}
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">Shortlist Candidate</h3>
-                  <p className="text-sm text-slate-500 mt-1">
+                  <h3 className="text-xl font-bold text-slate-850 dark:text-slate-100">
+                    Shortlist Candidate
+                  </h3>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-450 mt-1">
                     Generate interview slots for{" "}
-                    <span className="font-semibold text-blue-600">
-                      {session.profile_id.first_name} {session.profile_id.last_name}
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      {candName}
                     </span>
                   </p>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
 
-              {/* Content */}
-              <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
-                {/* Information Callout */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3 text-sm text-blue-800">
-                  <AlertCircle className="w-5 h-5 shrink-0 text-blue-600 mt-0.5" />
+                {/* Bulk Slot Generation Informational Callout */}
+                <div className="bg-blue-50/50 dark:bg-blue-955/20 border border-blue-100/50 dark:border-blue-900/30 rounded-2xl p-4 flex gap-3 text-xs text-blue-800 dark:text-blue-300">
+                  <AlertCircle className="w-4.5 h-4.5 shrink-0 text-blue-500 mt-0.5" />
                   <div>
-                    <span className="font-semibold">Bulk Slot Generation:</span> Select a date range and your daily time blocks. We will automatically generate all specific slots for each day.
+                    <span className="font-bold">Bulk Slot Generation:</span> Select a date range and your daily time blocks. We will automatically generate all specific slots for each day.
                   </div>
                 </div>
 
-                <div className="bg-slate-50 rounded-xl border border-slate-200 p-5 space-y-6">
-                  {/* Date Range Form */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-                      <Calendar className="w-4 h-4 text-blue-600" /> Date Range
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">
-                          Start Date
-                        </label>
+                {/* Main Form Fields */}
+                <div className="space-y-6">
+                  
+                  {/* Start Date & End Date Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                        Start Date
+                      </label>
+                      <div className="relative">
                         <input
                           type="date"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer pr-10"
                         />
+                        <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 pointer-events-none" />
                       </div>
+                    </div>
 
-                      <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">
-                          End Date
-                        </label>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                        End Date
+                      </label>
+                      <div className="relative">
                         <input
                           type="date"
                           value={endDate}
                           onChange={(e) => setEndDate(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer pr-10"
                         />
+                        <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 pointer-events-none" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Daily Time Blocks */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3 border-t border-slate-200 pt-5">
-                      <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-blue-600" /> Daily Time Blocks
-                      </h4>
-                      <button 
-                        onClick={handleAddTimeBlock}
-                        className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md transition-colors"
-                      >
-                        <Plus className="w-3 h-3" /> Add Block
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {timeBlocks.map((block, index) => (
-                        <div key={block.id} className="flex items-center gap-3">
-                          <div className="flex-1 grid grid-cols-2 gap-3">
-                            <div>
+                  {/* Daily Time Blocks Dynamic Form Rows */}
+                  <div className="space-y-4 pt-2">
+                    {timeBlocks.map((block, index) => (
+                      <div key={block.id} className="relative group">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                              Start Time Block {timeBlocks.length > 1 ? `#${index + 1}` : ""}
+                            </label>
+                            <div className="relative">
                               <input
                                 type="time"
                                 value={block.start}
                                 onChange={(e) => handleTimeBlockChange(block.id, 'start', e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer pr-10"
                               />
-                            </div>
-                            <div>
-                              <input
-                                type="time"
-                                value={block.end}
-                                onChange={(e) => handleTimeBlockChange(block.id, 'end', e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
-                              />
+                              <Clock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 pointer-events-none" />
                             </div>
                           </div>
-                          <button 
-                            onClick={() => handleRemoveTimeBlock(block.id)}
-                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Remove time block"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                              End Time Block {timeBlocks.length > 1 ? `#${index + 1}` : ""}
+                            </label>
+                            <div className="relative flex items-center gap-2">
+                              <div className="relative flex-1">
+                                <input
+                                  type="time"
+                                  value={block.end}
+                                  onChange={(e) => handleTimeBlockChange(block.id, 'end', e.target.value)}
+                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer pr-10"
+                                />
+                                <Clock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 pointer-events-none" />
+                              </div>
+                              {timeBlocks.length > 1 && (
+                                <button 
+                                  type="button"
+                                  onClick={() => handleRemoveTimeBlock(block.id)}
+                                  className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-955 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                                  title="Remove time block"
+                                >
+                                  <Trash2 className="w-4.5 h-4.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
+
+                  {/* Add Block button */}
+                  <div className="flex justify-start">
+                    <button
+                      type="button"
+                      onClick={handleAddTimeBlock}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5 transition-colors border-none bg-transparent cursor-pointer select-none"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add More</span>
+                    </button>
+                  </div>
+
                 </div>
 
-                {/* Preview summary */}
+                {/* Preview summary hint box */}
                 {totalSlotsCount > 0 && (
-                  <div className="text-center px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm font-medium text-green-800">
-                      Generating <span className="font-bold text-green-900">{timeBlocks.length} block{timeBlocks.length > 1 ? 's' : ''}</span> per day over <span className="font-bold text-green-900">{daysCount} day{daysCount > 1 ? 's' : ''}</span>. 
-                      Total: <span className="font-bold text-green-900">{totalSlotsCount} slot{totalSlotsCount > 1 ? 's' : ''}</span>.
+                  <div className="text-center px-4.5 py-3 bg-green-50/50 dark:bg-green-955/20 border border-green-150 dark:border-green-900/30 rounded-2xl">
+                    <p className="text-xs font-semibold text-green-800 dark:text-green-300">
+                      Generating <span className="font-bold text-green-900 dark:text-green-200">{timeBlocks.length} block{timeBlocks.length > 1 ? 's' : ''}</span> per day over <span className="font-bold text-green-900 dark:text-green-200">{daysCount} day{daysCount > 1 ? 's' : ''}</span>. 
+                      Total: <span className="font-bold text-green-900 dark:text-green-200">{totalSlotsCount} slot{totalSlotsCount > 1 ? 's' : ''}</span>.
                     </p>
                   </div>
                 )}
+
+                {/* Full-Width shortlist button */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={!startDate || !endDate || isSubmitting || totalSlotsCount < 1}
+                    className={`w-full py-3 rounded-full text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 select-none border-none ${
+                      !startDate || !endDate || isSubmitting || totalSlotsCount < 1
+                        ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <UserCheck className="w-4 h-4" />
+                    )}
+                    {isSubmitting ? "Processing..." : "Shortlist"}
+                  </button>
+                </div>
+
               </div>
 
-              {/* Footer */}
-              <div className="border-t border-slate-200 p-6 flex justify-end gap-3 bg-slate-50 shrink-0">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 border border-slate-300 hover:bg-slate-100 rounded-lg text-slate-700 text-sm font-medium transition-colors"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={!startDate || !endDate || isSubmitting || totalSlotsCount < 1}
-                  className={`px-5 py-2 rounded-lg text-white text-sm font-semibold flex items-center gap-2 transition-all ${
-                    !startDate || !endDate || isSubmitting || totalSlotsCount < 1
-                      ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 shadow-md shadow-green-600/10 cursor-pointer"
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <UserCheck className="w-4 h-4" />
-                  )}
-                  {isSubmitting ? "Processing..." : "Generate Slots & Shortlist"}
-                </button>
-              </div>
             </motion.div>
           </div>
         </>

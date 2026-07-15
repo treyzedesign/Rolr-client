@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/stores/auth-store";
+import { useProfileStore } from "@/stores/profile-store";
+import { Bell, Shield, Eye, EyeOff, Loader2, Check, Lock } from "lucide-react";
 import toast from "react-hot-toast";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export default function CandidateSettings() {
-  const { changePassword } = useAuthStore();
+  const { changePassword, user } = useAuthStore();
+  const { fetchProfile, getCandidateProfile } = useProfileStore();
+  const candidateProfile = getCandidateProfile();
+
+  const [activeTab, setActiveTab] = useState<"password" | "notifications" | "privacy">("password");
+  
+  // Forms and validation state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -23,6 +32,21 @@ export default function CandidateSettings() {
     new: false,
     confirm: false
   });
+
+  // Interactive toggle states
+  const [notifications, setNotifications] = useState({
+    email: true,
+    push: false,
+    recommendations: false,
+  });
+  const [privacy, setPrivacy] = useState({
+    profileVisibility: true,
+    dataSharing: false,
+  });
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleInputChange = (field: 'currentPassword' | 'newPassword' | 'confirmPassword', value: string) => {
     if (field === 'currentPassword') {
@@ -52,17 +76,16 @@ export default function CandidateSettings() {
   const isPasswordValid = () => {
     return (
       newPassword.length >= 8 &&
-      /[A-Z]/.test(newPassword) && // hasUppercase
-      /[a-z]/.test(newPassword) && // hasLowercase
-      /[0-9]/.test(newPassword) && // hasNumber
-      /[^A-Za-z0-9]/.test(newPassword) && // hasSymbol
+      /[A-Z]/.test(newPassword) && 
+      /[a-z]/.test(newPassword) && 
+      /[0-9]/.test(newPassword) && 
+      /[^A-Za-z0-9]/.test(newPassword) && 
       confirmPassword.trim() &&
       newPassword === confirmPassword
     );
   };
 
   const handlePasswordUpdate = async () => {
-    // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error("All password fields are required");
       return;
@@ -81,7 +104,6 @@ export default function CandidateSettings() {
         confirmPassword
       });
       toast.success("Password updated successfully");
-      // Clear form
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -91,257 +113,370 @@ export default function CandidateSettings() {
       setIsLoading(false);
     }
   };
+
+  const toggleNotification = (type: "email" | "push" | "recommendations") => {
+    setNotifications(prev => ({ ...prev, [type]: !prev[type] }));
+    toast.success("Notification preferences updated");
+  };
+
+  const togglePrivacy = (type: "profileVisibility" | "dataSharing") => {
+    setPrivacy(prev => ({ ...prev, [type]: !prev[type] }));
+    toast.success("Privacy settings updated");
+  };
+
+  const candidateName = candidateProfile?.first_name && candidateProfile?.last_name
+    ? `${candidateProfile.first_name} ${candidateProfile.last_name}`
+    : user?.fullName || "Job Seeker";
+
+  const emailDisplay = user?.email || "candidate@example.com";
+
   return (
-    <div>
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-slate-100">
-          Settings
-        </h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-300">
-          Manage your account settings and preferences.
-        </p>
-      </div>
-
-      <div className="rounded-xl border border-blue-100 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Change Password</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Current Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPasswords.current ? "text" : "password"}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-900 placeholder-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                placeholder="Enter current password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                {showPasswords.current ? (
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              New Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPasswords.new ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => handleInputChange('newPassword', e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-900 placeholder-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                placeholder="Enter new password (min. 8 characters)"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                {showPasswords.new ? (
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-          
-          {/* Password Requirements */}
-          {newPassword && (
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center text-xs">
-                <span className={`mr-2 ${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'}`}>
-                  {passwordValidation.hasUppercase ? '✓' : '○'}
-                </span>
-                <span className={passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-500'}>
-                  At least one uppercase letter
-                </span>
-              </div>
-              <div className="flex items-center text-xs">
-                <span className={`mr-2 ${passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-400'}`}>
-                  {passwordValidation.hasLowercase ? '✓' : '○'}
-                </span>
-                <span className={passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-500'}>
-                  At least one lowercase letter
-                </span>
-              </div>
-              <div className="flex items-center text-xs">
-                <span className={`mr-2 ${passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-400'}`}>
-                  {passwordValidation.hasNumber ? '✓' : '○'}
-                </span>
-                <span className={passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-500'}>
-                  At least one number
-                </span>
-              </div>
-              <div className="flex items-center text-xs">
-                <span className={`mr-2 ${passwordValidation.hasSymbol ? 'text-green-600' : 'text-gray-400'}`}>
-                  {passwordValidation.hasSymbol ? '✓' : '○'}
-                </span>
-                <span className={passwordValidation.hasSymbol ? 'text-green-600' : 'text-gray-500'}>
-                  At least one symbol
-                </span>
-              </div>
-              <div className="flex items-center text-xs">
-                <span className={`mr-2 ${passwordValidation.isValidLength ? 'text-green-600' : 'text-gray-400'}`}>
-                  {passwordValidation.isValidLength ? '✓' : '○'}
-                </span>
-                <span className={passwordValidation.isValidLength ? 'text-green-600' : 'text-gray-500'}>
-                  At least 8 characters
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-        
+    <div className="space-y-8 pb-12">
+      {/* Header section matching designs */}
+      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between select-none">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Confirm New Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPasswords.confirm ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-900 placeholder-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 ${
-                  confirmPassword && !passwordValidation.passwordsMatch
-                    ? 'border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20'
-                    : ''
-                }`}
-                placeholder="Confirm new password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                {showPasswords.confirm ? (
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            Settings
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Manage your account settings and preferences.
+          </p>
+        </div>
+        
+        {/* Top-Right Profile Widget */}
+        <div className="hidden md:flex items-center gap-4">
+          <ThemeToggle />
+          <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>
+          </button>
+          
+          <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/45 dark:text-blue-300">
+              {candidateProfile?.profile_image_url ? (
+                <img 
+                  src={candidateProfile.profile_image_url} 
+                  alt="avatar" 
+                  className="h-full w-full rounded-full object-cover"
+                />
+              ) : (
+                candidateName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">
+                {emailDisplay}
+              </span>
+              <div className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Candidate</span>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Grid Settings Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-6xl mx-auto w-full">
+        
+        {/* Left Side Menu - Tabs */}
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-4 shadow-[0_4px_25px_rgba(0,0,0,0.01)] flex flex-col gap-2 select-none">
+          {/* 1. Change Password Tab */}
+          <button
+            onClick={() => setActiveTab("password")}
+            className={`flex w-full items-center justify-between p-4 rounded-2xl transition-all duration-200 cursor-pointer border border-transparent ${
+              activeTab === "password"
+                ? "bg-blue-50/50 dark:bg-blue-950/15 border-blue-100/50 dark:border-blue-900/25 text-blue-600 dark:text-blue-400"
+                : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-850"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <img
+                src="/Assets/key-square.png"
+                alt="Key"
+                className="w-5 h-5 object-contain"
+              />
+              <span className="text-sm font-semibold">Change Password</span>
+            </div>
+            <span className={`text-lg font-light ${activeTab === 'password' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-600'}`}>&rarr;</span>
+          </button>
+
+          {/* 2. Notification Preference Tab */}
+          <button
+            onClick={() => setActiveTab("notifications")}
+            className={`flex w-full items-center justify-between p-4 rounded-2xl transition-all duration-200 cursor-pointer border border-transparent ${
+              activeTab === "notifications"
+                ? "bg-blue-50/50 dark:bg-blue-950/15 border-blue-100/50 dark:border-blue-900/25 text-blue-600 dark:text-blue-400"
+                : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-850"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Bell className={`w-5 h-5 ${activeTab === 'notifications' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`} />
+              <span className="text-sm font-semibold">Notification Preference</span>
+            </div>
+            <span className={`text-lg font-light ${activeTab === 'notifications' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-600'}`}>&rarr;</span>
+          </button>
+
+          {/* 3. Privacy & Data Tab */}
+          <button
+            onClick={() => setActiveTab("privacy")}
+            className={`flex w-full items-center justify-between p-4 rounded-2xl transition-all duration-200 cursor-pointer border border-transparent ${
+              activeTab === "privacy"
+                ? "bg-blue-50/50 dark:bg-blue-950/15 border-blue-100/50 dark:border-blue-900/25 text-blue-600 dark:text-blue-400"
+                : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-850"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Shield className={`w-5 h-5 ${activeTab === 'privacy' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`} />
+              <span className="text-sm font-semibold">Privacy & Data</span>
+            </div>
+            <span className={`text-lg font-light ${activeTab === 'privacy' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-600'}`}>&rarr;</span>
+          </button>
+        </div>
+
+        {/* Right Side Content Panel */}
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-150/75 dark:border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-[0_12px_45px_rgba(0,0,0,0.015)] min-h-[400px]">
           
-          {/* Password Match Validation */}
-          {confirmPassword && (
-            <div className="mt-1">
-              <div className="flex items-center text-xs">
-                <span className={`mr-2 ${passwordValidation.passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
-                  {passwordValidation.passwordsMatch ? '✓' : '✗'}
-                </span>
-                <span className={passwordValidation.passwordsMatch ? 'text-green-600' : 'text-red-600'}>
-                  {passwordValidation.passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
-                </span>
+          {/* TAB 1: CHANGE PASSWORD */}
+          {activeTab === "password" && (
+            <div className="space-y-6">
+              <h2 className="text-lg font-bold text-slate-850 dark:text-slate-100">
+                Change Password
+              </h2>
+              
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1 select-none">Current Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.current ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-12 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                      className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer"
+                    >
+                      {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1 select-none">New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.new ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-12 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                      className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer"
+                    >
+                      {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {/* Password requirements visual validation list */}
+                  {newPassword && (
+                    <div className="mt-2.5 p-3.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl space-y-1.5 select-none border border-slate-100/50 dark:border-slate-800/40">
+                      <div className="flex items-center text-[10px] font-bold">
+                        <span className={`mr-2 flex h-4 w-4 items-center justify-center rounded-full text-white ${passwordValidation.hasUppercase ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>✓</span>
+                        <span className={passwordValidation.hasUppercase ? 'text-green-600' : 'text-slate-500'}>At least one uppercase letter</span>
+                      </div>
+                      <div className="flex items-center text-[10px] font-bold">
+                        <span className={`mr-2 flex h-4 w-4 items-center justify-center rounded-full text-white ${passwordValidation.hasLowercase ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>✓</span>
+                        <span className={passwordValidation.hasLowercase ? 'text-green-600' : 'text-slate-500'}>At least one lowercase letter</span>
+                      </div>
+                      <div className="flex items-center text-[10px] font-bold">
+                        <span className={`mr-2 flex h-4 w-4 items-center justify-center rounded-full text-white ${passwordValidation.hasNumber ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>✓</span>
+                        <span className={passwordValidation.hasNumber ? 'text-green-600' : 'text-slate-500'}>At least one number</span>
+                      </div>
+                      <div className="flex items-center text-[10px] font-bold">
+                        <span className={`mr-2 flex h-4 w-4 items-center justify-center rounded-full text-white ${passwordValidation.hasSymbol ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>✓</span>
+                        <span className={passwordValidation.hasSymbol ? 'text-green-600' : 'text-slate-500'}>At least one symbol</span>
+                      </div>
+                      <div className="flex items-center text-[10px] font-bold">
+                        <span className={`mr-2 flex h-4 w-4 items-center justify-center rounded-full text-white ${passwordValidation.isValidLength ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>✓</span>
+                        <span className={passwordValidation.isValidLength ? 'text-green-600' : 'text-slate-500'}>At least 8 characters</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1 select-none">Confirm New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.confirm ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                      className={`w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-12 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 ${
+                        confirmPassword && !passwordValidation.passwordsMatch
+                          ? 'border-red-300 bg-red-50/50 dark:border-red-600/30 dark:bg-red-950/20'
+                          : ''
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                      className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer"
+                    >
+                      {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {confirmPassword && (
+                    <div className="mt-2 flex items-center text-[10px] font-bold select-none">
+                      <span className={`mr-2 flex h-4 w-4 items-center justify-center rounded-full text-white ${passwordValidation.passwordsMatch ? 'bg-green-500' : 'bg-red-500'}`}>
+                        {passwordValidation.passwordsMatch ? '✓' : '✗'}
+                      </span>
+                      <span className={passwordValidation.passwordsMatch ? 'text-green-600' : 'text-red-500'}>
+                        {passwordValidation.passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={handlePasswordUpdate}
+                disabled={isLoading || !currentPassword || !isPasswordValid()}
+                className="w-full py-3.5 mt-6 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl shadow-sm active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 border-none"
+              >
+                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isLoading ? "Updating Password..." : "Update Password"}
+              </button>
+            </div>
+          )}
+
+          {/* TAB 2: NOTIFICATION PREFERENCES */}
+          {activeTab === "notifications" && (
+            <div className="space-y-6">
+              <h2 className="text-lg font-bold text-slate-850 dark:text-slate-100">
+                Notification Preference
+              </h2>
+
+              <div className="space-y-4">
+                {/* 1. Email Notification */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 p-5 rounded-2xl flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:bg-slate-50/30 transition-colors">
+                  <div>
+                    <p className="text-sm font-bold text-slate-850 dark:text-slate-100">Email Notification</p>
+                    <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">Receive email update about your application</p>
+                  </div>
+                  <div 
+                    onClick={() => toggleNotification("email")}
+                    className="flex-shrink-0"
+                  >
+                    {notifications.email ? (
+                      <div className="h-6 w-6 rounded-md bg-blue-500 flex items-center justify-center text-white border border-blue-500 cursor-pointer shadow-sm">
+                        <Check className="w-4 h-4 stroke-[3px]" />
+                      </div>
+                    ) : (
+                      <div className="h-6 w-6 rounded-md bg-transparent border border-slate-300 dark:border-slate-700 cursor-pointer hover:border-blue-500 transition-colors" />
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Push Notification */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 p-5 rounded-2xl flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:bg-slate-50/30 transition-colors">
+                  <div>
+                    <p className="text-sm font-bold text-slate-850 dark:text-slate-100">Push Notification</p>
+                    <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">Get instant update on your device</p>
+                  </div>
+                  <div 
+                    onClick={() => toggleNotification("push")}
+                    className="flex-shrink-0"
+                  >
+                    {notifications.push ? (
+                      <div className="h-6 w-6 rounded-md bg-blue-500 flex items-center justify-center text-white border border-blue-500 cursor-pointer shadow-sm">
+                        <Check className="w-4 h-4 stroke-[3px]" />
+                      </div>
+                    ) : (
+                      <div className="h-6 w-6 rounded-md bg-transparent border border-slate-300 dark:border-slate-700 cursor-pointer hover:border-blue-500 transition-colors" />
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Job Recommendations */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 p-5 rounded-2xl flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:bg-slate-50/30 transition-colors">
+                  <div>
+                    <p className="text-sm font-bold text-slate-850 dark:text-slate-100">Job Recommendations</p>
+                    <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">Receive personalized job suggestions</p>
+                  </div>
+                  <div 
+                    onClick={() => toggleNotification("recommendations")}
+                    className="flex-shrink-0"
+                  >
+                    {notifications.recommendations ? (
+                      <div className="h-6 w-6 rounded-md bg-blue-500 flex items-center justify-center text-white border border-blue-500 cursor-pointer shadow-sm">
+                        <Check className="w-4 h-4 stroke-[3px]" />
+                      </div>
+                    ) : (
+                      <div className="h-6 w-6 rounded-md bg-transparent border border-slate-300 dark:border-slate-700 cursor-pointer hover:border-blue-500 transition-colors" />
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
-        </div>
-        
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={handlePasswordUpdate}
-            disabled={isLoading || !currentPassword || !isPasswordValid()}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isLoading ? "Updating..." : "Update Password"}
-          </button>
-        </div>
-      </div>
 
-      <div className="rounded-xl border border-blue-100 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Notification Preferences</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-slate-900 dark:text-slate-100">Email Notifications</p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Receive email updates about your applications</p>
-            </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6"></span>
-            </button>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-slate-900 dark:text-slate-100">Push Notifications</p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Get instant updates on your device</p>
-            </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-slate-700">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
-            </button>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-slate-900 dark:text-slate-100">Job Recommendations</p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Receive personalized job suggestions</p>
-            </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6"></span>
-            </button>
-          </div>
-        </div>
-      </div>
+          {/* TAB 3: PRIVACY & DATA */}
+          {activeTab === "privacy" && (
+            <div className="space-y-6">
+              <h2 className="text-lg font-bold text-slate-850 dark:text-slate-100">
+                Privacy & Data
+              </h2>
 
-      <div className="rounded-xl border border-blue-100 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Privacy & Data</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-slate-900 dark:text-slate-100">Profile Visibility</p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Make your profile visible to employers</p>
+              <div className="space-y-4">
+                {/* 1. Profile Visibility */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 p-5 rounded-2xl flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:bg-slate-50/30 transition-colors">
+                  <div>
+                    <p className="text-sm font-bold text-slate-850 dark:text-slate-100">Profile Visibility</p>
+                    <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">Make your profile visible to employers</p>
+                  </div>
+                  <div
+                    onClick={() => togglePrivacy("profileVisibility")}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
+                      privacy.profileVisibility ? "bg-blue-500" : "bg-slate-300 dark:bg-slate-700"
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                        privacy.profileVisibility ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Data Sharing */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 p-5 rounded-2xl flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:bg-slate-50/30 transition-colors">
+                  <div>
+                    <p className="text-sm font-bold text-slate-850 dark:text-slate-100">Data Sharing</p>
+                    <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">Share data with trusted partners</p>
+                  </div>
+                  <div
+                    onClick={() => togglePrivacy("dataSharing")}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
+                      privacy.dataSharing ? "bg-blue-500" : "bg-slate-300 dark:bg-slate-700"
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                        privacy.dataSharing ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6"></span>
-            </button>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-slate-900 dark:text-slate-100">Data Sharing</p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Share data with trusted partners</p>
-            </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-slate-700">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
-            </button>
-          </div>
-        </div>
-        
-        <div className="mt-6 space-y-3">
-          <button className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
-            Download My Data
-          </button>
-          <button className="w-full rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-300">
-            Delete Account
-          </button>
+          )}
+
         </div>
       </div>
     </div>

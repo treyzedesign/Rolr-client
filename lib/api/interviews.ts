@@ -30,6 +30,7 @@ export interface InterviewSession {
     education_level: string;
     experience_years: number;
     skills: string[];
+    profile_image_url?: string;
   };
   status: "pending" | "in_progress" | "completed" | "expired";
   expires_at: string;
@@ -183,7 +184,7 @@ export interface EmployerBooking {
   status: "pending" | "booked" | "expired";
   meet_link?: string;
   google_event_id?: string;
-  candidate_id?: { _id: string; email: string; first_name?: string; last_name?: string };
+  candidate_id?: { _id: string; email: string; first_name?: string; last_name?: string; profile_image_url?: string };
   interview_session_id?: { _id: string; job_id: any; overall_score: number };
   chosen_slot?: { start: string; end: string };
   available_slots: { start: string; end: string; _id: string }[];

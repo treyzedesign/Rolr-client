@@ -25,3 +25,22 @@ Redesigned the candidate dashboard page, discover jobs page, card swipe board, a
 - Redesigned the jobs discover router page with a customized search filter pill structure, dynamic matching loader dialogs, and overlapping clipboard empty state boards.
 - Upgraded `JobSwipeBoard` card structures with metadata symbol fields, summaries, skill badges, rotatable card stacking, and built-in solid action control groups.
 - Configured layout wrapper grids to widen main contents to fluid margins and hidden redundant navigation elements on desktop sizes.
+
+---
+
+## Update - 2026-07-13
+
+### Summary
+- Hidden the top-right action toolbar (containing the notification bell, candidate profile badge, and "Discover Jobs" button) in the candidate dashboard on mobile views to reduce clutter.
+- Placed the dark/light mode `ThemeToggle` switch right next to the notification bell in both candidate header layouts.
+
+### Modifications
+- **[page.tsx (Candidate Dashboard)](file:///c:/Users/User/Desktop/workswipe_client/app/candidate/page.tsx)** (Line 138): Added Tailwind CSS responsive classes `hidden md:flex` to hide the actions container on small screens. Integrated the `ThemeToggle` component beside the notification bell.
+- **[JobSeekerNavbar.tsx](file:///c:/Users/User/Desktop/workswipe_client/components/candidate/JobSeekerNavbar.tsx)** (Line 43): Placed the `ThemeToggle` switch next to the notification bell in the mobile navbar.
+
+### Commit Draft - Short
+`fix: hide action toolbar on mobile and add theme toggles to candidate headers`
+
+### Commit Draft - Long
+- Updated the candidate dashboard header layout to hide the action bar on mobile devices.
+- Integrated the ThemeToggle component beside the notification bell on both the main dashboard view and the mobile header navbar.

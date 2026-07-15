@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { X, MapPin, Briefcase, GraduationCap, Volume2, Play, Pause, User } from "lucide-react";
+import { X, Volume2, Play, Pause, MapPin, Briefcase } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { JobApplicant } from "@/types/job";
 
@@ -15,7 +15,7 @@ export function ApplicantProfileModal({ applicant, isOpen, onClose }: ApplicantP
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const profile = applicant?.job_seeker_id.profile;
+  const profile = applicant?.job_seeker_id?.profile;
 
   const togglePlayPause = () => {
     if (!audioRef.current || !profile?.voice_intro_url) return;
@@ -49,181 +49,244 @@ export function ApplicantProfileModal({ applicant, isOpen, onClose }: ApplicantP
     }
   }, [applicant]);
 
-  if (!isOpen || !applicant) return null;
+  if (!isOpen || !applicant || !profile) return null;
+
+  const applicantName = `${profile.first_name || "Helen"} ${profile.last_name || "Coker"}`;
+  const applicantRole = applicant.job_id?.title || profile.job_category || "Virtual Assistant";
+  const experienceYears = profile.experience_years ? `${profile.experience_years} Years` : "Not specified";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+      
+      {/* Backdrop blur overlay */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal Content */}
+      {/* Modal Card Container */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={{ opacity: 0, scale: 0.96, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
+        exit={{ opacity: 0, scale: 0.96, y: 15 }}
+        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+        className="relative bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col select-none"
       >
-        {/* Header with background image */}
-        <div className="relative h-48 bg-gradient-to-br from-blue-400 to-indigo-600">
-          {profile?.profile_image_url && (
-            <img
-              src={profile.profile_image_url}
-              alt={`${profile.first_name} ${profile.last_name}`}
-              className="w-full h-full object-cover"
-            />
-          )}
+        
+        {/* Close Button top right */}
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-lg transition-colors border-none bg-transparent cursor-pointer z-20"
+        >
+          <X className="w-5 h-5 text-slate-500" />
+        </button>
+
+        {/* Modal Content Scroll Area */}
+        <div className="p-8 space-y-6">
           
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-colors"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
-
-          {/* Profile name overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-            <h2 className="text-3xl font-bold text-white mb-1">
-              {profile?.first_name} {profile?.last_name}
-            </h2>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 max-h-[calc(90vh-12rem)] overflow-y-auto">
-          {/* Basic Information */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3">Basic Information</h3>
-            <div className="space-y-3">
-              {profile?.bio && (
-                  <div className="flex items-start text-slate-600">
-                    <User className="w-4 h-4 mr-3 text-slate-400 mt-0.5" />
-                    <span className="text-slate-700 leading-relaxed">{profile.bio}</span>
-                  </div>
-              )}
-              {profile?.location && (
-                <div className="flex items-center text-slate-600">
-                  <MapPin className="w-4 h-4 mr-3 text-slate-400" />
-                  <span>{profile.location}</span>
+          {/* Header Profile Area */}
+          <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-800/80">
+            {/* Circular Profile Avatar */}
+            <div className="w-24 h-24 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-150 overflow-hidden shadow-xs shrink-0">
+              {profile?.profile_image_url ? (
+                <img 
+                  src={profile.profile_image_url} 
+                  alt={applicantName} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold">
+                  {applicantName.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
+            
+            {/* Candidate Details */}
+            <div className="text-center sm:text-left space-y-1">
+              <h2 className="text-2xl font-bold text-slate-850 dark:text-slate-100">
+                {applicantName}
+              </h2>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-450 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <span>{applicantRole}</span>
+                {profile.location && (
+                  <>
+                    <span className="text-slate-300">&bull;</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" /> {profile.location}
+                    </span>
+                  </>
+                )}
+                {profile.experience_years !== undefined && (
+                  <>
+                    <span className="text-slate-300">&bull;</span>
+                    <span className="flex items-center gap-1">
+                      <Briefcase className="w-3.5 h-3.5 text-slate-400" /> {experienceYears}
+                    </span>
+                  </>
+                )}
+              </p>
+            </div>
           </div>
 
-
-
-          {/* Skills */}
-          {profile?.skills && profile.skills.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {profile.skills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
+          {/* Biography/About Description */}
+          {profile.bio && (
+            <div className="text-sm font-semibold text-slate-655 dark:text-slate-350 leading-relaxed max-w-xl">
+              {profile.bio}
             </div>
           )}
 
-          {/* Professional Information */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3">Professional Information</h3>
-            <div className="space-y-3">
-              {profile?.experience_level && (
-                <div className="flex items-center text-slate-600">
-                  <Briefcase className="w-4 h-4 mr-3 text-slate-400" />
-                  <span>Experience Level: {profile.experience_level}</span>
-                </div>
-              )}
-              {profile?.job_category && (
-                <div className="flex items-center text-slate-600">
-                  <GraduationCap className="w-4 h-4 mr-3 text-slate-400" />
-                  <span>Category: {profile.job_category}</span>
-                </div>
-              )}
-              {profile?.employment_status && (
-                <div className="flex items-center text-slate-600">
-                  <Briefcase className="w-4 h-4 mr-3 text-slate-400" />
-                  <span>Employment Status: {profile.employment_status}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Voice Introduction */}
-          {profile?.voice_intro_url && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">Voice Introduction</h3>
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={togglePlayPause}
-                    className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors"
-                  >
-                    {isPlaying ? (
-                      <Pause className="w-5 h-5" />
-                    ) : (
-                      <Play className="w-5 h-5 ml-0.5" />
-                    )}
-                  </button>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Volume2 className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-900">Voice Introduction</span>
-                    </div>
-                    <div className="text-xs text-blue-700">
-                      {isPlaying ? "Playing..." : "Click to play voice introduction"}
-                    </div>
+          {/* Core Grid Sections */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Left Column */}
+            <div className="space-y-6">
+              
+              {/* Education Card */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                <h3 className="text-sm font-bold text-slate-850 dark:text-slate-100 mb-3.5">
+                  Education
+                </h3>
+                <div className="space-y-2.5 text-xs font-semibold">
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[110px] shrink-0">Education Level:</span>
+                    <span className="text-slate-700 dark:text-slate-300">{profile.education_level || "Not specified"}</span>
+                  </div>
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[110px] shrink-0">Field of Study:</span>
+                    <span className="text-slate-700 dark:text-slate-300">{profile.education_field || "Not specified"}</span>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Application Details */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3">Application Details</h3>
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-600">Applied Position:</span>
-                  <span className="text-sm font-medium text-slate-900">{applicant.job_id.title}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-600">Application Status:</span>
-                  <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                    applicant.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    applicant.status === 'approved' ? 'bg-green-100 text-green-700' :
-                    applicant.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>
-                    {applicant.status}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-600">Applied Date:</span>
-                  <span className="text-sm font-medium text-slate-900">
-                    {new Date(applicant.created_at).toLocaleDateString()}
-                  </span>
+              {/* Job Preference Card */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                <h3 className="text-sm font-bold text-slate-850 dark:text-slate-100 mb-3.5">
+                  Job Preference
+                </h3>
+                <div className="space-y-2.5 text-xs font-semibold">
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[130px] shrink-0">Min Salary:</span>
+                    <span className="text-slate-700 dark:text-slate-300">
+                      {profile.preferred_salary_min ? `NGN ${profile.preferred_salary_min.toLocaleString()}` : "Not specified"}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[130px] shrink-0">Max Salary:</span>
+                    <span className="text-slate-700 dark:text-slate-300">
+                      {profile.preferred_salary_max ? `NGN ${profile.preferred_salary_max.toLocaleString()}` : "Not specified"}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[130px] shrink-0">Work Type Preference:</span>
+                    <span className="text-slate-700 dark:text-slate-300 capitalize">{profile.work_type_preference || "Not specified"}</span>
+                  </div>
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[130px] shrink-0">Availability:</span>
+                    <span className="text-slate-700 dark:text-slate-300 capitalize">{profile.availability || "Not specified"}</span>
+                  </div>
                 </div>
               </div>
+
             </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              
+              {/* Voice Introduction Card */}
+              {profile.voice_intro_url && (
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                  <h3 className="text-sm font-bold text-slate-850 dark:text-slate-100 mb-3.5">
+                    Voice Introduction
+                  </h3>
+                  
+                  {/* Wave player wrapper */}
+                  <div className="bg-blue-50/50 dark:bg-blue-955/20 border border-blue-100/50 dark:border-blue-900/30 rounded-2xl p-4 flex items-center gap-3">
+                    <button
+                      onClick={togglePlayPause}
+                      className="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-all active:scale-90 border-none cursor-pointer shrink-0"
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4 ml-0.5" />
+                      )}
+                    </button>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1.5 select-none">
+                        <Volume2 className="w-4 h-4 text-blue-500" />
+                        <span className="text-[10px] font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider">Voice Intro Playback</span>
+                      </div>
+                      {/* Interactive graphic EQ wave indicator */}
+                      <div className="flex items-end gap-1.5 h-4 pb-0.5">
+                        {[...Array(8)].map((_, i) => (
+                          <motion.div
+                            key={i}
+                            className="flex-1 bg-blue-400 dark:bg-blue-500/80 rounded-full"
+                            style={{ height: '3px' }}
+                            animate={{
+                              height: isPlaying ? `${Math.random() * 12 + 3}px` : '3px',
+                            }}
+                            transition={{
+                              duration: 0.35,
+                              repeat: isPlaying ? Infinity : 0,
+                              repeatType: "reverse",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Professional Information Card */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                <h3 className="text-sm font-bold text-slate-850 dark:text-slate-100 mb-3.5">
+                  Professional Information
+                </h3>
+                <div className="space-y-3.5 text-xs font-semibold">
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[120px] shrink-0">Job Category:</span>
+                    <span className="text-slate-700 dark:text-slate-300">{profile.job_category || "Not specified"}</span>
+                  </div>
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[120px] shrink-0">Experience Level:</span>
+                    <span className="text-slate-700 dark:text-slate-300 capitalize">{profile.experience_level || "Not specified"}</span>
+                  </div>
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[120px] shrink-0">Years of Experience:</span>
+                    <span className="text-slate-700 dark:text-slate-300">{experienceYears}</span>
+                  </div>
+                  <div className="flex items-start gap-1">
+                    <span className="text-slate-400 dark:text-slate-500 min-w-[120px] shrink-0">Employment Status:</span>
+                    <span className="text-slate-700 dark:text-slate-300">{profile.employment_status || "Not specified"}</span>
+                  </div>
+                  {profile.work_experience && (
+                    <div className="flex flex-col gap-1 border-t border-slate-50 dark:border-slate-850/50 pt-2.5">
+                      <span className="text-slate-400 dark:text-slate-500">Work Experience:</span>
+                      <span className="text-slate-655 dark:text-slate-350 leading-relaxed font-semibold">{profile.work_experience}</span>
+                    </div>
+                  )}
+                  {profile.skills && profile.skills.length > 0 && (
+                    <div className="flex flex-col gap-1.5 border-t border-slate-50 dark:border-slate-850/50 pt-2.5">
+                      <span className="text-slate-400 dark:text-slate-500">Skills:</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold">{profile.skills.join(", ")}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
           </div>
+
         </div>
 
-        {/* Hidden Audio Element */}
-        {profile?.voice_intro_url && (
+        {/* Hidden Audio Player for playback */}
+        {profile.voice_intro_url && (
           <audio
             ref={audioRef}
             src={profile.voice_intro_url}
@@ -231,6 +294,7 @@ export function ApplicantProfileModal({ applicant, isOpen, onClose }: ApplicantP
             preload="metadata"
           />
         )}
+
       </motion.div>
     </div>
   );

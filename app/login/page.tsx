@@ -60,16 +60,15 @@ export default function LoginPage() {
       {/* Reusable Left Panel - Brand Banner */}
       <AuthBanner />
 
-      {/* Right Panel - Login form */}
       <div className="w-full lg:w-[55%] flex flex-col justify-center items-center p-6 sm:p-12 relative">
-        {/* Mobile Header Logo */}
-        <div className="lg:hidden absolute top-8 left-8">
-          <Link href="/" className="text-2xl font-extrabold tracking-tight text-[#2782FF]">
-            Rolr
-          </Link>
-        </div>
-
         <div className="w-full max-w-[460px] flex flex-col">
+          {/* Mobile Header Logo */}
+          <div className="lg:hidden flex justify-center mb-6">
+            <Link href="/" className="text-2xl font-extrabold tracking-tight text-[#2782FF]">
+              Rolr
+            </Link>
+          </div>
+
           {/* Header block */}
           <div className="mb-10 text-center">
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">

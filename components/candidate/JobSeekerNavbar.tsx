@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/stores/auth-store";
 import { useProfileStore } from "@/stores/profile-store";
 import { Menu, Bell } from "lucide-react";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useEffect } from "react";
 
 interface JobSeekerNavbarProps {
@@ -40,6 +41,7 @@ export function JobSeekerNavbar({ onMobileMenuToggle }: JobSeekerNavbarProps) {
 
       {/* Right side: Bell & Profile avatar */}
       <div className="flex items-center gap-3">
+        <ThemeToggle />
         {/* Notification Bell */}
         <button className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/80 shadow-xs">
           <Bell className="h-4.5 w-4.5" />

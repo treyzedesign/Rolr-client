@@ -1,3 +1,5 @@
+import { CandidateProfile } from "./profile";
+
 export interface Job {
   _id: string;
   title: string;
@@ -122,19 +124,7 @@ export interface JobApplicant {
   job_seeker_id: {
     _id: string;
     email: string;
-    profile: {
-      first_name?: string;
-      last_name?: string;
-      employment_status?: string;
-      experience_level?: string;
-      job_category?: string;
-      location?: string;
-      phone?: string;
-      profile_image_url?: string;
-      voice_intro_url?: string;
-      bio?: string;
-      skills: string[]
-    };
+    profile: CandidateProfile;
   };
   job_id: {
     _id: string;

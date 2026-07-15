@@ -33,11 +33,13 @@ export function JobSeekerSidebar({ isMobileMenuOpen, onMobileMenuClose }: JobSee
   const router = useRouter();
   const pathname = usePathname();
   const { logout } = useAuthStore();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = () => {
     logout();
     router.push("/login");
     onMobileMenuClose();
+    setShowLogoutConfirm(false);
   };
 
   return (
@@ -104,8 +106,8 @@ export function JobSeekerSidebar({ isMobileMenuOpen, onMobileMenuClose }: JobSee
           {/* Logout Section */}
           <div className="pb-6">
             <button
-              onClick={handleLogout}
-              className="flex w-full items-center gap-3 py-3 px-4 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 dark:text-red-400 dark:hover:bg-red-950/20 cursor-pointer select-none"
+              onClick={() => setShowLogoutConfirm(true)}
+              className="flex w-full items-center gap-3 py-3 px-4 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 dark:text-red-400 dark:hover:bg-red-950/20 cursor-pointer select-none border-none bg-transparent"
             >
               <LogOut className="h-4.5 w-4.5 text-red-500 dark:text-red-400" />
               Logout
@@ -121,6 +123,36 @@ export function JobSeekerSidebar({ isMobileMenuOpen, onMobileMenuClose }: JobSee
           <X className="h-5 w-5" />
         </button>
       </aside>
+
+      {/* Logout Confirmation Modal Overlay */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm select-none">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[1.8rem] shadow-2xl p-7 max-w-sm w-full mx-4 flex flex-col items-center text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <h3 className="font-semibold text-slate-850 dark:text-slate-100 text-base">
+                Account Logout
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">
+                Are you sure you want to logout of your account?
+              </p>
+            </div>
+            <div className="flex gap-4 w-full pt-1.5">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full py-2.5 text-xs font-bold transition-all border-none cursor-pointer text-center"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-full py-2.5 text-xs font-bold transition-all border-none cursor-pointer text-center active:scale-[0.98]"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
