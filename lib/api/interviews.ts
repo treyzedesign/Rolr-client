@@ -51,6 +51,9 @@ export interface InterviewSession {
   overall_score?: number;
   summary?: string;
   is_verified?: boolean;
+  application_id?: {
+    status: string;
+  };
 }
 
 export interface InterviewSessionResponse {
@@ -162,6 +165,12 @@ export const interviewsApi = {
     const response = await apiClient.post(`/ai-interviews/${id}/shortlist`, {
       available_slots: availableSlots
     });
+    return response.data;
+  },
+
+  // Select a candidate for hire
+  selectCandidate: async (id: string): Promise<any> => {
+    const response = await apiClient.post(`/ai-interviews/${id}/select`);
     return response.data;
   },
 

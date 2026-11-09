@@ -22,9 +22,14 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "WorkSwipe — Swipe. Match. Hire.",
+  title: "Swipe | Match | Get hired",
   description:
     "Discovery-first hiring: swipe roles or talent, voice screening, and real-time messaging — before the interview.",
+  icons: {
+    icon: "/Assets/logo1.png",
+    shortcut: "/Assets/logo1.png",
+    apple: "/Assets/logo1.png",
+  },
 };
 
 export default function RootLayout({
@@ -35,6 +40,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${nunito.variable} ${geistMono.variable} ${syne.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">

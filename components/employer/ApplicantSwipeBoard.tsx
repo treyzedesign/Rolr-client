@@ -59,7 +59,9 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
       setIsPlaying(false);
       setAudioLoaded(false);
     }
-  }, [topApplicant]);
+    x.set(0);
+    controls.set({ x: 0, rotate: 0, opacity: 1 });
+  }, [topApplicant, x, controls]);
 
   if (!topApplicant || !topApplicant.job_seeker_id?.profile) {
     return (
@@ -73,6 +75,8 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
     if (!topApplicant || isSwiping) return;
     
     setIsSwiping(true);
+    const applicantId = topApplicant._id;
+    const candidateId = topApplicant.job_seeker_id?._id;
     
     try {
       await controls.start({
@@ -82,24 +86,31 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
         transition: { type: "spring", stiffness: 450, damping: 25 }
       });
       
-      onSwipe(topApplicant._id, accepted);
+      // Fire swipe API in background without blocking UI
+      if (candidateId) {
+        swipeCandidate({
+          candidate_id: candidateId,
+          action: accepted ? "right" : "left"
+        }).catch(error => {
+          console.error("Swipe API failed:", error);
+        });
+      }
+
+      // Notify parent to advance queue
+      onSwipe(applicantId, accepted);
       
-      await swipeCandidate({
-        candidate_id: topApplicant.job_seeker_id?._id,
-        action: accepted ? "right" : "left"
-      }).catch(error => {
-        console.error("Swipe API failed:", error);
-      });
-      
-      await controls.start({
+      // Reset motion values safely for the next card
+      x.set(0);
+      controls.set({
         x: 0,
         rotate: 0,
-        opacity: 1,
-        transition: { duration: 0 }
+        opacity: 1
       });
       
-    } catch (error) {
-      console.error("Animation failed:", error);
+    } catch (error: any) {
+      if (!error?.message?.includes("controls.start() should only be called after a component has mounted")) {
+        console.error("Animation failed:", error);
+      }
     } finally {
       setIsSwiping(false);
     }
@@ -113,11 +124,17 @@ export function ApplicantSwipeBoard({ applicants, onSwipe }: ApplicantSwipeBoard
     if (Math.abs(currentX) > threshold) {
       await handleSwipe(currentX > 0);
     } else {
-      await controls.start({
-        x: 0,
-        rotate: 0,
-        transition: { type: "spring", stiffness: 500, damping: 25 }
-      });
+      try {
+        await controls.start({
+          x: 0,
+          rotate: 0,
+          transition: { type: "spring", stiffness: 500, damping: 25 }
+        });
+      } catch (err: any) {
+        if (!err?.message?.includes("controls.start() should only be called after a component has mounted")) {
+          console.error("Snap back failed:", err);
+        }
+      }
     }
   };
 

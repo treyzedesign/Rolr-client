@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useJobStore } from "@/stores/job-store";
-import { X, Loader2, ChevronDown, Search } from "lucide-react";
+import { X, Loader2, ChevronDown, Search, Sparkles, RotateCcw } from "lucide-react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import "@/styles/ckeditor.css";
@@ -22,38 +22,54 @@ const EXPERIENCE_LEVELS = [
 ];
 
 const ALLOWED_JOB_TITLES = [
-  "Administrative Assistant",
-  "Brand & Communications Assistant",
-  "Call Centre Agent",
-  "Community Manager",
-  "Community Support Specialist",
-  "Customer Relations Officer",
-  "Customer Success Associate",
-  "Customer Support Representative",
-  "Data Entry Clerk",
-  "Email Marketing Assistant",
-  "Growth & Marketing Analyst",
-  "HR & Talent Acquisition Coordinator",
-  "HR Assistant",
-  "Junior AI/ML Data Annotator & Analyst",
-  "Junior Backend Developer",
-  "Junior Business Analyst",
-  "Junior Copywriter & Brand Voice Specialist",
-  "Junior DevOps / Cloud Support Engineer",
-  "Junior Data Analyst",
-  "Junior Frontend Developer",
-  "Junior Product Manager / APM",
-  "Junior UI/UX Designer",
-  "Live Chat Support Agent",
-  "Office Coordinator",
-  "QA / Software Tester",
-  "Records & Information Management Clerk",
-  "Research Assistant",
-  "Scheduling & Appointments Coordinator",
-  "Social Media Assistant",
-  "User Research Intern / Associate",
-  "Virtual Assistant (VA)"
-];
+  "Account Manager",
+  "Admin Support",
+  "Junior Website Manager",
+] as const;
+
+type AllowedJobTitle = typeof ALLOWED_JOB_TITLES[number];
+
+const JOB_TEMPLATES: Record<AllowedJobTitle, {
+  description: string;
+  defaultSkills: string[];
+}> = {
+  "Account Manager": {
+    description: `<h2>Role Summary</h2><p>We are seeking a driven, relationship-focused <strong>Account Manager</strong> to lead client communications, cultivate long-term partnerships, and ensure the consistent delivery of high-value solutions. You will act as the trusted strategic liaison between key accounts and internal teams, driving client satisfaction, retention, and account growth.</p><h2>Key Responsibilities</h2><ul><li>Serve as the primary point of contact and trusted advisor for assigned client accounts.</li><li>Build, nurture, and maintain strong, productive relationships with key stakeholders and decision-makers.</li><li>Understand client business objectives and challenges to provide tailored strategic recommendations.</li><li>Coordinate cross-functional teams to ensure milestones, deliverables, and service-level agreements (SLAs) are met on time.</li><li>Conduct regular client check-ins, performance reviews, and prepare comprehensive status reports.</li><li>Address client inquiries promptly, proactively resolve issues, and de-escalate sensitive situations.</li><li>Identify retention risks and uncover upsell/cross-sell opportunities to expand client lifetime value.</li></ul><h2>Qualifications & Requirements</h2><ul><li>Proven experience in account management, customer success, client relations, or business development.</li><li>Exceptional verbal and written communication, active listening, and relationship-building abilities.</li><li>Strong organizational and multitasking skills with the discipline to manage multiple client accounts concurrently.</li><li>Familiarity with CRM tools (such as HubSpot, Salesforce, or Zendesk) and productivity suites (Google Workspace / MS Office).</li><li>Demonstrated problem-solving acumen, commercial awareness, and professional negotiation skills.</li><li>Bachelor's degree or equivalent practical experience in business administration, marketing, or related field.</li></ul><h2>Key Skills & Competencies</h2><ul><li>Client Relationship Management & Retention</li><li>Strategic & Persuasive Communication</li><li>CRM Management & Pipeline Tracking</li><li>Stakeholder Alignment & Negotiation</li><li>Conflict Resolution & Problem-Solving</li></ul>`,
+    defaultSkills: [
+      "Relationship building",
+      "CRM basics",
+      "Written & verbal communication",
+      "Clear communication",
+      "Problem-solving",
+      "Stakeholder communication",
+      "Active listening"
+    ]
+  },
+  "Admin Support": {
+    description: `<h2>Role Summary</h2><p>We are looking for an organized, proactive, and dependable <strong>Admin Support</strong> professional to manage administrative, operational, and clerical workflows. In this role, you will provide critical support to leadership and the broader team, ensuring daily operations run smoothly, schedules are impeccably coordinated, and documentation remains accurate and secure.</p><h2>Key Responsibilities</h2><ul><li>Manage executive and departmental calendars, schedule meetings, coordinate appointments, and prepare meeting materials.</li><li>Monitor and prioritize incoming emails, correspondence, and client/internal inquiries.</li><li>Draft, format, proofread, and organize reports, spreadsheets, presentations, and official documentation.</li><li>Maintain digital filing systems, document archives, and execute fast, accurate data entry into company software.</li><li>Coordinate logistics for meetings, events, travel itineraries, and team operational requirements.</li><li>Handle sensitive and proprietary company information with strict confidentiality and discretion.</li><li>Collaborate with team members across departments to resolve administrative bottlenecks and support ad-hoc projects.</li></ul><h2>Qualifications & Requirements</h2><ul><li>Proven track record in administrative support, executive assistance, office coordination, or virtual assistance.</li><li>Proficiency in Google Workspace (Docs, Sheets, Slides, Drive) and Microsoft Office Suite (Word, Excel, PowerPoint).</li><li>Exceptional written and verbal communication skills with strong attention to spelling, grammar, and document formatting.</li><li>Outstanding time management and prioritization skills with the capacity to handle competing priorities.</li><li>High degree of integrity, professionalism, and commitment to confidentiality.</li><li>Fast and accurate typing speed (50+ WPM) with rigorous attention to detail.</li></ul><h2>Key Skills & Competencies</h2><ul><li>Calendar & Schedule Management</li><li>Email & Correspondence Handling</li><li>Data Entry & Document Formatting</li><li>MS Office & Google Workspace</li><li>Organization & Multitasking</li><li>Confidentiality & Discretion</li></ul>`,
+    defaultSkills: [
+      "Calendar management (Google/Outlook)",
+      "Email management",
+      "MS Office & Google Workspace",
+      "Data entry",
+      "Scheduling & coordination",
+      "Organized and detail-oriented",
+      "Confidentiality"
+    ]
+  },
+  "Junior Website Manager": {
+    description: `<h2>Role Summary</h2><p>We are seeking a detail-oriented and tech-savvy <strong>Junior Website Manager</strong> to maintain, update, and optimize our digital web platforms. You will collaborate closely with marketing, design, and development teams to ensure our websites deliver a seamless user experience, stay visually engaging, reflect current content, and perform reliably across all devices and browsers.</p><h2>Key Responsibilities</h2><ul><li>Manage day-to-day website updates, publish new landing pages, blog posts, banners, product listings, and multimedia assets.</li><li>Regularly monitor website performance, test site functionality, check for broken links, and verify cross-browser and mobile responsiveness.</li><li>Make foundational front-end modifications using HTML, CSS, and modern content management systems (CMS).</li><li>Implement on-page SEO best practices (meta descriptions, alt tags, URL structures) and optimize site media for fast loading speeds.</li><li>Track key website engagement metrics and visitor traffic using Google Analytics and search console tools.</li><li>Coordinate with UI/UX designers and copywriters to ensure consistent brand identity and layout fidelity.</li><li>Document, troubleshoot, and log bugs or technical discrepancies, following up until resolved.</li></ul><h2>Qualifications & Requirements</h2><ul><li>Demonstrated foundational knowledge of HTML5, CSS3, JavaScript basics, and CMS platforms (e.g., WordPress, Webflow, Shopify).</li><li>Understanding of responsive web design, mobile-first layouts, and cross-browser compatibility.</li><li>Familiarity with on-page SEO principles, web performance optimization, and basic web analytics (Google Analytics).</li><li>A keen visual eye for design layout, typography, branding consistency, and user experience.</li><li>Strong problem-solving instincts, methodical troubleshooting skills, and eagerness to learn new web technologies.</li><li>Educational background, certification, or bootcamp in Web Development, Digital Media, or related practical experience.</li></ul><h2>Key Skills & Competencies</h2><ul><li>HTML5, CSS3 & Web Fundamentals</li><li>CMS Management (WordPress / Webflow / Shopify)</li><li>Responsive Web Design & Mobile Optimization</li><li>On-Page SEO & Web Performance</li><li>QA Testing & Bug Tracking</li><li>Attention to Visual & Technical Detail</li></ul>`,
+    defaultSkills: [
+      "HTML5, CSS3, JavaScript (ES6+)",
+      "Basic understanding of APIs (Postman)",
+      "Content scheduling",
+      "SEO copywriting fundamentals",
+      "Bug tracking (Jira/Linear)",
+      "QA / Software Tester",
+      "Attention to detail"
+    ]
+  }
+};
 
 const COMMON_SKILLS = [
   // Hard/Technical Skills & Tools
@@ -266,6 +282,7 @@ interface CreateJobModalProps {
 
 export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalProps) {
   const { createJob, updateJob, isCreating, isUpdating } = useJobStore();
+  const editorRef = useRef<any>(null);
   
   const [formData, setFormData] = useState<CreateJobRequest>({
     title: "",
@@ -298,6 +315,9 @@ export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalPro
         salary_max: jobToEdit.salary_max,
       });
       setTitleSearch(jobToEdit.title);
+      if (editorRef.current) {
+        editorRef.current.setData(jobToEdit.description || "");
+      }
     } else {
       setFormData({
         title: "",
@@ -310,11 +330,37 @@ export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalPro
         salary_max: undefined,
       });
       setTitleSearch("");
+      if (editorRef.current) {
+        editorRef.current.setData("");
+      }
     }
-  }, [jobToEdit]);
+  }, [jobToEdit, isOpen]);
 
   const handleInputChange = (field: keyof CreateJobRequest, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSelectJobTitle = (title: string) => {
+    setTitleSearch(title);
+
+    // Find matching template (case-insensitive check for resilience)
+    const matchedKey = (ALLOWED_JOB_TITLES as readonly string[]).find(
+      t => t.toLowerCase() === title.trim().toLowerCase()
+    ) as AllowedJobTitle | undefined;
+
+    const template = matchedKey ? JOB_TEMPLATES[matchedKey] : null;
+
+    setFormData(prev => ({
+      ...prev,
+      title,
+      description: template ? template.description : prev.description,
+      required_skills: template ? template.defaultSkills : prev.required_skills,
+    }));
+
+    if (template && editorRef.current) {
+      editorRef.current.setData(template.description);
+    }
+    setShowTitleDropdown(false);
   };
 
   const removeSkill = (skillToRemove: string) => {
@@ -372,7 +418,13 @@ export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalPro
           
           {/* Searchable Job Title Input */}
           <div className="relative">
-            <label className="block text-xs font-bold text-slate-500 mb-1">Job Title</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-slate-500">Job Title</label>
+              <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+                Select a title to auto-fill description & skills
+              </span>
+            </div>
+
             <div className="relative">
               <input
                 type="text"
@@ -381,13 +433,37 @@ export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalPro
                 onFocus={() => setShowTitleDropdown(true)}
                 onBlur={() => setTimeout(() => setShowTitleDropdown(false), 250)}
                 onChange={(e) => {
-                  setTitleSearch(e.target.value);
-                  handleInputChange("title", e.target.value);
+                  const val = e.target.value;
+                  setTitleSearch(val);
+                  handleInputChange("title", val);
                 }}
                 className="w-full rounded-xl border border-slate-200 bg-white pl-4 pr-10 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
                 placeholder="Type to search and select job title..."
               />
               <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+
+            {/* Quick-Select Role Badges */}
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              <span className="text-[11px] font-semibold text-slate-400 mr-1 select-none">Quick roles:</span>
+              {ALLOWED_JOB_TITLES.map((title) => {
+                const isSelected = formData.title === title;
+                return (
+                  <button
+                    key={title}
+                    type="button"
+                    onClick={() => handleSelectJobTitle(title)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all border cursor-pointer ${
+                      isSelected
+                        ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800"
+                        : "bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/60 dark:bg-slate-850 dark:hover:bg-slate-800 dark:text-slate-300 dark:border-slate-800"
+                    }`}
+                  >
+                    <Sparkles className={`w-3 h-3 ${isSelected ? "text-blue-500" : "text-slate-400"}`} />
+                    {title}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Dropdown Options List */}
@@ -397,17 +473,24 @@ export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalPro
                   <li
                     key={title}
                     onMouseDown={() => {
-                      setTitleSearch(title);
-                      handleInputChange("title", title);
-                      setShowTitleDropdown(false);
+                      handleSelectJobTitle(title);
                     }}
-                    className="cursor-pointer px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-slate-850 dark:hover:text-blue-400"
+                    className="cursor-pointer px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-slate-850 dark:hover:text-blue-400 flex items-center justify-between"
                   >
-                    {title}
+                    <span>{title}</span>
+                    <span className="text-[10px] text-blue-500 font-normal bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md">
+                      Auto-fills summary & skills
+                    </span>
                   </li>
                 ))}
                 {filteredTitles.length === 0 && (
-                  <li className="px-4 py-2.5 text-xs text-slate-450 italic select-none">
+                  <li 
+                    onMouseDown={() => {
+                      handleInputChange("title", titleSearch);
+                      setShowTitleDropdown(false);
+                    }}
+                    className="cursor-pointer px-4 py-2.5 text-xs text-slate-450 italic select-none"
+                  >
                     Use custom title "{titleSearch}"
                   </li>
                 )}
@@ -417,12 +500,39 @@ export function CreateJobModal({ isOpen, onClose, jobToEdit }: CreateJobModalPro
 
           {/* Job Summary */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1">Job Summary</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-slate-500">Job Summary</label>
+              {formData.title && JOB_TEMPLATES[formData.title as AllowedJobTitle] && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const template = JOB_TEMPLATES[formData.title as AllowedJobTitle];
+                    if (template) {
+                      handleInputChange("description", template.description);
+                      if (editorRef.current) {
+                        editorRef.current.setData(template.description);
+                      }
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 transition-colors bg-transparent border-none cursor-pointer"
+                  title="Reset description to role template"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Reset to role template
+                </button>
+              )}
+            </div>
             <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-950">
               <CKEditor
                 editor={ClassicEditor as any}
                 data={formData.description}
-                onChange={(event, editor) => {
+                onReady={(editor: any) => {
+                  editorRef.current = editor;
+                  if (formData.description && editor.getData() !== formData.description) {
+                    editor.setData(formData.description);
+                  }
+                }}
+                onChange={(event: any, editor: any) => {
                   const data = editor.getData();
                   handleInputChange("description", data);
                 }}

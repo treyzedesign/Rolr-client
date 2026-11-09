@@ -12,7 +12,9 @@ import {
   Calendar, 
   User, 
   Settings, 
-  LogOut 
+  LogOut,
+  FileCheck,
+  Award 
 } from "lucide-react";
 
 const candidateNavItems = [
@@ -20,6 +22,8 @@ const candidateNavItems = [
   { href: "/candidate/discover", label: "Jobs", icon: Briefcase },
   { href: "/candidate/applications", label: "My Applications", icon: FileText },
   { href: "/candidate/interviews", label: "Interviews", icon: Calendar },
+  { href: "/candidate/offers", label: "Job Offers", icon: Award },
+  { href: "/candidate/engagements", label: "My Engagements", icon: FileCheck },
   { href: "/candidate/profile", label: "My Profile", icon: User },
   { href: "/candidate/settings", label: "Settings", icon: Settings },
 ];

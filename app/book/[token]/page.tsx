@@ -239,9 +239,9 @@ export default function CandidateBookingPage() {
                 <div>
                   <p className="text-blue-100 text-sm font-medium uppercase tracking-wider mb-1">Position</p>
                   <p className="text-xl font-semibold">
-                    {bookingData.job_id?.title || "Software Engineering Role"}
+                    {bookingData.job_title || "Role"}
                   </p>
-                  <p className="text-blue-100 mt-1">{bookingData.employer_id?.company_name || "Company Name"}</p>
+                  <p className="text-blue-100 mt-1">{bookingData.booking?.employer_id?.company || "Company Name"}</p>
                 </div>
               </div>
               
@@ -252,7 +252,7 @@ export default function CandidateBookingPage() {
                 <div>
                   <p className="text-blue-100 text-sm font-medium uppercase tracking-wider mb-1">Candidate</p>
                   <p className="text-xl font-semibold">
-                    {bookingData.candidate_id?.first_name || "Candidate"} {bookingData.candidate_id?.last_name || ""}
+                    {bookingData.candidate_name || "Candidate"} 
                   </p>
                 </div>
               </div>

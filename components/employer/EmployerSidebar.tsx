@@ -12,7 +12,8 @@ import {
   Calendar, 
   Building2, 
   Settings, 
-  LogOut 
+  LogOut,
+  FileCheck 
 } from "lucide-react";
 
 const employerNavItems = [
@@ -20,6 +21,7 @@ const employerNavItems = [
   { href: "/employer/jobs", label: "Jobs", icon: Briefcase },
   { href: "/employer/applicants", label: "Candidates", icon: Users },
   { href: "/employer/interviews", label: "Interviews", icon: Calendar },
+  { href: "/employer/engagements", label: "Engagements", icon: FileCheck },
   { href: "/employer/profile", label: "Company Profile", icon: Building2 },
   { href: "/employer/settings", label: "Settings", icon: Settings },
 ];

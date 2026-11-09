@@ -47,3 +47,24 @@ Redesigned the candidate interviews list page and the interview session chat wor
 
 ## Commit Draft - Long
 `Updated the candidate interview session workspace to perfectly match mockup designs. Redesigned active and preview recording layouts with horizontal timer-waveform alignment and border-free action buttons, redesigned the chat voice preview bubble with a white waveform and bottom-right timer layout, polished the final Submit Interview button, and redesigned the interview completion view with custom text copy and a Discover Jobs redirect button.`
+
+---
+
+# Update - 2026-07-25
+
+## Date
+2026-07-25
+
+## Summary
+Added candidate application status display in the employer interviews dashboard sessions table and verification results modal, and converted the "Shortlist for Google Meet" button to a "Select for Hire" action when the candidate is shortlisted.
+
+## Modifications
+- **[interviews.ts](file:///c:/Users/User/Desktop/workswipe_client/lib/api/interviews.ts)** (Lines 171-175): Added `selectCandidate` function to post to `/ai-interviews/${id}/select`.
+- **[InterviewResultsModal.tsx](file:///c:/Users/User/Desktop/workswipe_client/components/employer/InterviewResultsModal.tsx)** (Lines 10-14, 162-172, 280-290): Added `onSelectForHire` callback, rendered a styled application status badge next to the candidate name in the modal header, and modified the action button to display "Select for Hire" (linked to the select callback) when the status is `"shortlisted"`, and hidden entirely if the candidate is already `"selected"` or `"rejected"`.
+- **[page.tsx](file:///c:/Users/User/Desktop/workswipe_client/app/employer/interviews/page.tsx)** (Lines 41-70, 148-164, 498-500, 737): Integrated `getApplicationStatusBadge` helper, implemented `handleSelectForHire` with confirm dialog prompt and toast feedbacks, rendered status badges in the session rows next to the verification badges, and passed the callback handler to `InterviewResultsModal`.
+
+## Commit Draft - Short
+`feat: show application status and select shortlisted candidates for hire`
+
+## Commit Draft - Long
+`Updated the employer interviews dashboard to display candidate application status badges in both the sessions table list and results modal header. Converted the primary call-to-action button in the results modal to 'Select for Hire' when the candidate is shortlisted, prompting the user for confirmation and calling the backend API to select the candidate.`

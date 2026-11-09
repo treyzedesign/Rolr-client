@@ -1,4 +1,7 @@
 import { CandidateProfile } from "./profile";
+import type { ApplicationStatus } from "./hiring";
+
+export type { ApplicationStatus };
 
 export interface Job {
   _id: string;
@@ -97,7 +100,7 @@ export interface Application {
     updated_at: string;
     __v: number;
   };
-  status: "submitted" | "matched" | "shortlisted" | "selected" | "rejected";
+  status: ApplicationStatus;
   questions: any[];
   answers: any[];
   created_at: string;

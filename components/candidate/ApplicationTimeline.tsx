@@ -58,35 +58,89 @@ export function ApplicationTimeline({ application, isOpen, onClose }: Applicatio
     return `${day} ${month}, ${year} | ${hours}:${minutes} ${ampm}`;
   };
 
-  // Determine stage completion
+  // Determine stage completion across bilateral hiring lifecycle
   const isAppliedCompleted = true;
-  const isMatchedCompleted = ["matched", "shortlisted", "selected", "rejected"].includes(application.status);
-  const isShortlistedCompleted = ["shortlisted", "selected", "rejected"].includes(application.status);
-  const isHiredCompleted = application.status === "selected";
+  const isMatchedCompleted = [
+    "matched",
+    "shortlisted",
+    "selected",
+    "offer_pending",
+    "offer_accepted",
+    "contract_pending",
+    "hired",
+    "rejected",
+  ].includes(application.status);
+
+  const isInterviewCompleted = [
+    "shortlisted",
+    "selected",
+    "offer_pending",
+    "offer_accepted",
+    "contract_pending",
+    "hired",
+  ].includes(application.status);
+
+  const isOfferPendingCompleted = [
+    "offer_pending",
+    "offer_accepted",
+    "contract_pending",
+    "hired",
+  ].includes(application.status);
+
+  const isOfferExtendedCompleted = [
+    "offer_accepted",
+    "contract_pending",
+    "hired",
+  ].includes(application.status);
+
+  const isContractsOutCompleted = [
+    "contract_pending",
+    "hired",
+  ].includes(application.status);
+
+  const isHiredCompleted = ["hired", "selected"].includes(application.status);
 
   const timelineSteps = [
     {
       id: "applied",
-      label: `Applied to ${job.title} Role`,
+      label: `Applied to ${job.title}`,
       subtext: formatDateTime(application.created_at),
       completed: isAppliedCompleted,
     },
     {
       id: "matched",
       label: "Matched by Employer",
-      subtext: isMatchedCompleted ? "Employer reviewed details" : "Pending employer review",
+      subtext: isMatchedCompleted ? "Profile reviewed" : "Pending employer review",
       completed: isMatchedCompleted,
     },
     {
-      id: "shortlisted",
-      label: "Shortlisted for Interview",
-      subtext: isShortlistedCompleted ? "Interview session created" : "Pending shortlist decision",
-      completed: isShortlistedCompleted,
+      id: "interview",
+      label: "Interview Completed",
+      subtext: isInterviewCompleted ? "Interview evaluation finalized" : "Pending interview completion",
+      completed: isInterviewCompleted,
+    },
+    {
+      id: "offer_pending",
+      label: "Offer Pending Rolr Review",
+      subtext: isOfferPendingCompleted ? "Offer reviewed by Rolr Admin" : "Awaiting offer creation",
+      completed: isOfferPendingCompleted,
+    },
+    {
+      id: "offer_extended",
+      label: "Offer Extended",
+      subtext: isOfferExtendedCompleted ? "Offer accepted by candidate" : "Awaiting candidate decision",
+      completed: isOfferExtendedCompleted,
+    },
+    {
+      id: "contracts",
+      label: "Contracts Out for Signature",
+      subtext: isContractsOutCompleted ? "Bilateral agreements signed" : "Documenso e-sign pending",
+      completed: isContractsOutCompleted,
     },
     {
       id: "hired",
-      label: "Hired by Employer",
-      subtext: isHiredCompleted ? "Offer letter delivered" : "Pending final selection",
+      label: "Hired 🎉",
+      subtext: isHiredCompleted ? "Placement active & engaged" : "Pending contract finalization",
       completed: isHiredCompleted,
     },
   ];
@@ -110,7 +164,7 @@ export function ApplicationTimeline({ application, isOpen, onClose }: Applicatio
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 28, stiffness: 220 }}
-            className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] z-10 flex flex-col border border-slate-50 dark:border-slate-800 p-8 relative"
+            className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[0_20px_50px_rgba(0,0,0,0.12)] z-10 flex flex-col border border-slate-50 dark:border-slate-800 p-8 relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}

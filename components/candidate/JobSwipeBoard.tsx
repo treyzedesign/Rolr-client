@@ -72,16 +72,18 @@ export function JobSwipeBoard({ jobs, onSwipe, onViewDetails }: JobSwipeBoardPro
         console.error("Swipe failed:", error);
       });
 
-      // Reset animation controls for next card
-      await controls.start({
+      // Reset animation controls for next card safely without throwing when unmounted
+      x.set(0);
+      controls.set({
         x: 0,
         rotate: 0,
-        opacity: 1,
-        transition: { duration: 0 }
+        opacity: 1
       });
 
-    } catch (error) {
-      console.error("Swipe animation failed:", error);
+    } catch (error: any) {
+      if (!error?.message?.includes("controls.start() should only be called after a component has mounted")) {
+        console.error("Swipe animation failed:", error);
+      }
     } finally {
       setIsSwiping(false);
     }
@@ -108,11 +110,17 @@ export function JobSwipeBoard({ jobs, onSwipe, onViewDetails }: JobSwipeBoardPro
     if (Math.abs(currentX) > threshold) {
       await handleSwipe(currentX > 0);
     } else {
-      await controls.start({
-        x: 0,
-        rotate: 0,
-        transition: { type: "spring", stiffness: 600, damping: 25 }
-      });
+      try {
+        await controls.start({
+          x: 0,
+          rotate: 0,
+          transition: { type: "spring", stiffness: 600, damping: 25 }
+        });
+      } catch (err: any) {
+        if (!err?.message?.includes("controls.start() should only be called after a component has mounted")) {
+          console.error("Snap back failed:", err);
+        }
+      }
     }
   };
 

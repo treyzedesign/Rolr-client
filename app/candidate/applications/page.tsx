@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { JobDetailsModal } from "@/components/candidate/JobDetailsModal";
 import { ApplicationTimeline } from "@/components/candidate/ApplicationTimeline";
+import { ApplicationStatusBadge } from "@/components/hiring/StatusBadges";
 import { applicationsApi } from "@/lib/api/applications";
 import { useAuthStore } from "@/stores/auth-store";
 import { useProfileStore } from "@/stores/profile-store";
@@ -233,9 +234,7 @@ export default function CandidateApplications() {
                       <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-snug truncate max-w-[70%]">
                         {appJob.title}
                       </h3>
-                      <span className="bg-blue-600 text-white rounded-full px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider select-none flex-shrink-0">
-                        Applied
-                      </span>
+                      <ApplicationStatusBadge status={app.status || "submitted"} size="sm" />
                     </div>
                     <p className="text-blue-500 font-semibold text-sm mt-0.5 truncate max-w-[85%]">
                       {appJob.employer_id?.profile?.business_name || 'Company'}

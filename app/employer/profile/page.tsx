@@ -358,7 +358,7 @@ export default function EmployerProfilePage() {
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500">
                       <Check className="h-3.5 w-3.5 stroke-[3px]" />
                     </div>
-                    <span className="text-sm font-semibold line-through text-slate-450 dark:text-slate-550">
+                    <span className="text-sm font-semibold text-slate-450 dark:text-slate-550">
                       {item.label}
                     </span>
                   </div>

@@ -18,7 +18,9 @@ import {
   Heart,
   CalendarDays,
   FileText,
-  ChevronDown
+  ChevronDown,
+  FileCheck,
+  Award
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -55,6 +57,8 @@ export default function AdminLayout({
         { name: "Booked Meets", href: "/admin/bookings" }
       ]
     },
+    { name: "Offers", href: "/admin/offers", icon: FileCheck },
+    { name: "Engagements", href: "/admin/engagements", icon: Award },
     { name: "Notifications", href: "/admin/notifications", icon: Bell },
     { name: "Security", href: "/admin/security", icon: Shield },
     { name: "Settings", href: "/admin/settings", icon: Settings },

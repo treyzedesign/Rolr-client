@@ -112,12 +112,24 @@ Redesigned the employer dashboard page (`app/employer/page.tsx`) to match the pr
 - **[Hero.tsx](file:///c:/Users/User/Desktop/workswipe_client/components/landing/Hero.tsx)** (Lines 43-102):
   - Removed incorrect references to "live messaging" or "match messaging".
   - Replaced with accurate text highlighting the automated "AI assessment" feature.
+- **[Employer Dashboard / Profile Setup Checklist Styling]**:
+  - Removed the `line-through` strike-through text decoration styling for completed setup progress items in:
+    - [employer/page.tsx](file:///c:/Users/User/Desktop/workswipe_client/app/employer/page.tsx)
+    - [employer/profile/page.tsx](file:///c:/Users/User/Desktop/workswipe_client/app/employer/profile/page.tsx)
+- **[layout.tsx (Metadata)]**:
+  - Configured layout page metadata setting the browser title to `"Swipe | Match | Get hired"`.
+  - Configured icon favicon assets mapping to `/Assets/logo1.png`.
+  - Removed Next.js's default static `app/favicon.ico` file to allow favicon requests to fallback and resolve to ROLr logo.
+- **[interviews/page.tsx](file:///c:/Users/User/Desktop/workswipe_client/app/employer/interviews/page.tsx)** (Lines 488-500):
+  - Added a visual verification status badge under the candidate name inside the sessions list table.
+  - Renders a green `"Verified"` tag if `is_verified` is true, and an amber `"Pending Verification"` tag if false.
 
 ## Commit Draft - Short
-`feat: refine landing hero description and statistics to highlight AI assessment`
+`feat: display verification status badge in employer interviews table`
 
 ## Commit Draft - Long
-- Updated landing page Hero description and stat boxes to remove references to messaging and focus on automated AI assessment.
-- Tailored landing page testimonials to highlight remote-ready, customer support, and administrative staffing solutions.
-- Fixed absolute mobile logo overlap in registration, job seeker registration, and login page viewports by nesting inside the content flex container.
-- Optimized candidate and employer workspace page headers to hide duplicate controls (ThemeToggle, Bell, user badge) on mobile sizes.
+- Added status tags for "Verified" and "Pending Verification" under candidate names in the employer interview sessions table.
+- Configured layout metadata settings to establish `"Swipe | Match | Get hired"` as the default browser tab title.
+- Mapped client shortcut icons and Apple touch icon references to `/Assets/logo1.png`.
+- Deleted Next.js's default static `app/favicon.ico` file to allow favicon fallback to `/Assets/logo1.png`.
+- Removed strike-through line-through styling on completed checklist progress text inside the employer dashboard progress card and setup wizard sidebar.

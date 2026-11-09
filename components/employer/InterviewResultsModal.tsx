@@ -10,9 +10,10 @@ interface InterviewResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onShortlist?: (session: InterviewSession) => void;
+  onSelectForHire?: (session: InterviewSession) => void;
 }
 
-export function InterviewResultsModal({ session, isOpen, onClose, onShortlist }: InterviewResultsModalProps) {
+export function InterviewResultsModal({ session, isOpen, onClose, onShortlist, onSelectForHire }: InterviewResultsModalProps) {
   // Clean up audio playback when modal closes
   useEffect(() => {
     if (!isOpen) {
@@ -160,6 +161,17 @@ export function InterviewResultsModal({ session, isOpen, onClose, onShortlist }:
                           Completed
                         </span>
                       )}
+                      {session.application_id?.status && (
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border uppercase tracking-wider ${
+                          session.application_id.status === "selected" ? "bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40" :
+                          session.application_id.status === "shortlisted" ? "bg-indigo-50 border-indigo-200 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800/40" :
+                          session.application_id.status === "matched" ? "bg-purple-50 border-purple-200 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/40" :
+                          session.application_id.status === "rejected" ? "bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-950/30 dark:text-rose-455 dark:border-rose-800/40" :
+                          "bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/40"
+                        }`}>
+                          App Status: {session.application_id.status === "selected" ? "Hired" : session.application_id.status}
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs font-semibold text-slate-555 dark:text-slate-400">
                       {candRole} &bull; {locationLabel} &bull; {yearsExperience}
@@ -278,13 +290,39 @@ export function InterviewResultsModal({ session, isOpen, onClose, onShortlist }:
                 >
                   Cancel
                 </button>
-                {onShortlist && isCompleted && (
-                  <button
-                    onClick={() => onShortlist(session)}
-                    className="bg-[#2979ff] hover:bg-[#2962ff] text-white font-bold px-6 py-2.5 rounded-full border-none cursor-pointer transition-colors text-xs shadow-sm"
-                  >
-                    Shortlist for Google Meet
-                  </button>
+                {onShortlist && isCompleted && session.application_id?.status !== "rejected" && (
+                  session.application_id?.status === "offer_pending" ? (
+                    <span className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 font-bold px-5 py-2 rounded-full text-xs">
+                      Offer Submitted to Rolr
+                    </span>
+                  ) : session.application_id?.status === "hired" ? (
+                    <span className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-bold px-5 py-2 rounded-full text-xs">
+                      Hired 🎉
+                    </span>
+                  ) : session.application_id?.status === "contract_pending" || session.application_id?.status === "offer_accepted" ? (
+                    <span className="bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 font-bold px-5 py-2 rounded-full text-xs">
+                      Contracts Pending Signature
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (
+                          session.application_id?.status === "shortlisted" ||
+                          session.application_id?.status === "selected"
+                        ) {
+                          onSelectForHire?.(session);
+                        } else {
+                          onShortlist(session);
+                        }
+                      }}
+                      className="bg-[#2979ff] hover:bg-[#2962ff] text-white font-bold px-6 py-2.5 rounded-full border-none cursor-pointer transition-colors text-xs shadow-sm"
+                    >
+                      {session.application_id?.status === "shortlisted" ||
+                      session.application_id?.status === "selected"
+                        ? "Create Hire Offer"
+                        : "Shortlist for Google Meet"}
+                    </button>
+                  )
                 )}
               </div>
 

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { 
-  Clock, 
-  CheckCircle, 
-  Users, 
-  Eye, 
+import {
+  Clock,
+  CheckCircle,
+  Users,
+  Eye,
   Bell,
   CheckSquare,
   Loader2,
@@ -17,6 +17,8 @@ import { interviewsApi } from "@/lib/api/interviews";
 import type { InterviewSession, EmployerSessionsResponse, EmployerBooking } from "@/lib/api/interviews";
 import { InterviewResultsModal } from "@/components/employer/InterviewResultsModal";
 import { ShortlistModal } from "@/components/employer/ShortlistModal";
+import { HireModal } from "@/components/employer/HireModal";
+import { ApplicationStatusBadge } from "@/components/hiring/StatusBadges";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useProfileStore } from "@/stores/profile-store";
 import { useAuthStore } from "@/stores/auth-store";
@@ -38,6 +40,11 @@ interface JobGroup {
   };
 }
 
+const getApplicationStatusBadge = (status?: string) => {
+  if (!status) return null;
+  return <ApplicationStatusBadge status={status} size="sm" />;
+};
+
 export default function EmployerInterviewsPage() {
   const { user } = useAuthStore();
   const { fetchProfile, getEmployerProfile } = useProfileStore();
@@ -47,12 +54,14 @@ export default function EmployerInterviewsPage() {
   const [allSessions, setAllSessions] = useState<InterviewSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [activeSubTab, setActiveSubTab] = useState<"ai_session" | "book_meet">("ai_session");
   const [selectedSession, setSelectedSession] = useState<InterviewSession | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shortlistSession, setShortlistSession] = useState<InterviewSession | null>(null);
   const [isShortlistOpen, setIsShortlistOpen] = useState(false);
+  const [hireSession, setHireSession] = useState<InterviewSession | null>(null);
+  const [isHireModalOpen, setIsHireModalOpen] = useState(false);
 
   // Booked Meets specific states
   const [bookings, setBookings] = useState<EmployerBooking[]>([]);
@@ -90,11 +99,11 @@ export default function EmployerInterviewsPage() {
       const response: EmployerSessionsResponse = await interviewsApi.getEmployerSessions();
       const sessions = response.sessions;
       setAllSessions(sessions);
-      
+
       // Group sessions by job
       const grouped = sessions.reduce((acc: { [key: string]: JobGroup }, session: InterviewSession) => {
         const jobId = session.job_id._id;
-        
+
         if (!acc[jobId]) {
           acc[jobId] = {
             job: session.job_id,
@@ -107,10 +116,10 @@ export default function EmployerInterviewsPage() {
             }
           };
         }
-        
+
         acc[jobId].sessions.push(session);
         acc[jobId].stats.total++;
-        
+
         if (session.status === 'completed') {
           acc[jobId].stats.completed++;
         } else if (session.status === 'in_progress') {
@@ -118,10 +127,10 @@ export default function EmployerInterviewsPage() {
         } else {
           acc[jobId].stats.pending++;
         }
-        
+
         return acc;
       }, {});
-      
+
       setJobGroups(Object.values(grouped));
       setError(null);
     } catch (err) {
@@ -144,6 +153,12 @@ export default function EmployerInterviewsPage() {
       toast.error(errMsg);
       throw err;
     }
+  };
+
+  const handleSelectForHire = (session: InterviewSession) => {
+    handleCloseModal();
+    setHireSession(session);
+    setIsHireModalOpen(true);
   };
 
   const handleViewResults = (session: InterviewSession) => {
@@ -169,17 +184,17 @@ export default function EmployerInterviewsPage() {
     const date = new Date(dateString);
     const month = date.toLocaleString('en-US', { month: 'long' });
     const day = date.getDate();
-    
+
     const getOrdinalSuffix = (d: number) => {
       if (d > 3 && d < 21) return 'th';
       switch (d % 10) {
-        case 1:  return "st";
-        case 2:  return "nd";
-        case 3:  return "rd";
+        case 1: return "st";
+        case 2: return "nd";
+        case 3: return "rd";
         default: return "th";
       }
     };
-    
+
     const suffix = getOrdinalSuffix(day);
     const year = date.getFullYear();
     return `${month} ${day}${suffix}, ${year}`;
@@ -214,13 +229,13 @@ export default function EmployerInterviewsPage() {
             {activeSubTab === "book_meet" ? "Booked Meets" : "Interview Sessions"}
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {activeSubTab === "book_meet" 
+            {activeSubTab === "book_meet"
               ? "Manage and join your scheduled candidate interviews."
               : "Track and manage candidate interview progress by job position"
             }
           </p>
         </div>
-        
+
         {/* Top-Right Action Controls & Profile widgets */}
         <div className="hidden md:flex items-center gap-4">
           <ThemeToggle />
@@ -228,13 +243,13 @@ export default function EmployerInterviewsPage() {
             <Bell className="h-5 w-5" />
             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>
           </button>
-          
+
           <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/45 dark:text-blue-300">
               {employerProfile?.profile_image_url ? (
-                <img 
-                  src={employerProfile.profile_image_url} 
-                  alt="avatar" 
+                <img
+                  src={employerProfile.profile_image_url}
+                  alt="avatar"
                   className="h-full w-full rounded-full object-cover"
                 />
               ) : (
@@ -258,22 +273,20 @@ export default function EmployerInterviewsPage() {
       <div className="flex items-center gap-3 select-none relative z-30">
         <button
           onClick={() => setActiveSubTab("ai_session")}
-          className={`px-5 py-2 rounded-full text-xs font-bold shadow-sm transition-all border border-transparent cursor-pointer ${
-            activeSubTab === "ai_session"
+          className={`px-5 py-2 rounded-full text-xs font-bold shadow-sm transition-all border border-transparent cursor-pointer ${activeSubTab === "ai_session"
               ? "bg-blue-600 text-white"
               : "bg-white dark:bg-slate-900 text-slate-655 dark:text-slate-350 border-slate-250 dark:border-slate-800 hover:bg-slate-50"
-          }`}
+            }`}
         >
           AI Session
         </button>
 
         <button
           onClick={() => setActiveSubTab("book_meet")}
-          className={`px-5 py-2 rounded-full text-xs font-bold shadow-sm transition-all border border-transparent cursor-pointer ${
-            activeSubTab === "book_meet"
+          className={`px-5 py-2 rounded-full text-xs font-bold shadow-sm transition-all border border-transparent cursor-pointer ${activeSubTab === "book_meet"
               ? "bg-blue-600 text-white"
               : "bg-white dark:bg-slate-900 text-slate-655 dark:text-slate-350 border-slate-250 dark:border-slate-800 hover:bg-slate-50"
-          }`}
+            }`}
         >
           Book Meet
         </button>
@@ -291,8 +304,8 @@ export default function EmployerInterviewsPage() {
 
             {isDropdownOpen && (
               <>
-                <div 
-                  className="fixed inset-0 z-10" 
+                <div
+                  className="fixed inset-0 z-10"
                   onClick={() => setIsDropdownOpen(false)}
                 />
                 <div className="absolute left-0 mt-1.5 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-20 flex flex-col overflow-hidden">
@@ -305,11 +318,10 @@ export default function EmployerInterviewsPage() {
                           setBookingStatusFilter(status);
                           setIsDropdownOpen(false);
                         }}
-                        className={`font-semibold text-[11px] px-4 py-2.5 flex items-center justify-between cursor-pointer transition-colors ${
-                          isActive 
-                            ? "bg-blue-50/50 dark:bg-blue-955/20 text-blue-600 dark:text-blue-400 font-bold" 
+                        className={`font-semibold text-[11px] px-4 py-2.5 flex items-center justify-between cursor-pointer transition-colors ${isActive
+                            ? "bg-blue-50/50 dark:bg-blue-955/20 text-blue-600 dark:text-blue-400 font-bold"
                             : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-850"
-                        }`}
+                          }`}
                       >
                         <span className="capitalize">{status}</span>
                         {isActive && <span className="text-[10px] text-blue-500 font-bold">✓</span>}
@@ -466,9 +478,9 @@ export default function EmployerInterviewsPage() {
                   const candRole = session.job_id?.title || "Virtual Assistant";
                   const questionsProgress = `${session.answers?.length || 0}/${session.questions?.length || 4}`;
                   const scoreValue = isCompleted ? `${session.overall_score || 0}/10` : "0/10";
-                  
+
                   return (
-                    <div 
+                    <div
                       key={session._id}
                       onClick={() => handleViewResults(session)}
                       className="px-5 py-3.5 border-b border-slate-50 dark:border-slate-855 hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-all flex items-center justify-between cursor-pointer"
@@ -477,9 +489,9 @@ export default function EmployerInterviewsPage() {
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 border border-slate-200 dark:border-slate-800 shrink-0">
                           {session.profile_id?.profile_image_url ? (
-                            <img 
-                              src={session.profile_id.profile_image_url} 
-                              alt={candName} 
+                            <img
+                              src={session.profile_id.profile_image_url}
+                              alt={candName}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -488,9 +500,23 @@ export default function EmployerInterviewsPage() {
                             </div>
                           )}
                         </div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                          {candName}
-                        </span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                            {candName}
+                          </span>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {session.is_verified ? (
+                              <span className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200/30 dark:border-emerald-800/40 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                Verified
+                              </span>
+                            ) : (
+                              <span className="bg-amber-50 dark:bg-amber-955/20 text-amber-600 dark:text-amber-400 border border-amber-200/30 dark:border-amber-800/40 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                Pending Verification
+                              </span>
+                            )}
+                            {getApplicationStatusBadge(session.application_id?.status)}
+                          </div>
+                        </div>
                       </div>
 
                       {/* Role column */}
@@ -612,17 +638,17 @@ export default function EmployerInterviewsPage() {
                   {bookings.map((booking) => {
                     const candName = `${booking.candidate_id?.first_name || "Helen"} ${booking.candidate_id?.last_name || "Coker"}`;
                     const jobTitle = booking.interview_session_id?.job_id?.title || "Virtual Assistant";
-                    const scoreValue = booking.interview_session_id?.overall_score 
-                      ? `${booking.interview_session_id.overall_score}/10` 
+                    const scoreValue = booking.interview_session_id?.overall_score
+                      ? `${booking.interview_session_id.overall_score}/10`
                       : "-------------";
-                    
+
                     const isBooked = booking.status === "booked";
                     const isPending = booking.status === "pending";
                     const isExpired = booking.status === "expired";
 
                     return (
-                      <div 
-                        key={booking._id} 
+                      <div
+                        key={booking._id}
                         className="px-5 py-3.5 hover:bg-slate-50/50 dark:hover:bg-slate-855/30 transition-colors flex items-center justify-between gap-4"
                       >
                         {/* Name Column */}
@@ -691,9 +717,8 @@ export default function EmployerInterviewsPage() {
                               }
                             }}
                             disabled={!booking.meet_link}
-                            className={`bg-blue-500 hover:bg-blue-600 text-white rounded-full px-3.5 py-1.5 text-[10px] font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs border-none ${
-                              !booking.meet_link ? "opacity-40 cursor-not-allowed" : "active:scale-95"
-                            }`}
+                            className={`bg-blue-500 hover:bg-blue-600 text-white rounded-full px-3.5 py-1.5 text-[10px] font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs border-none ${!booking.meet_link ? "opacity-40 cursor-not-allowed" : "active:scale-95"
+                              }`}
                           >
                             <Video className="w-3.5 h-3.5" />
                             <span>Join Meet</span>
@@ -715,6 +740,7 @@ export default function EmployerInterviewsPage() {
         session={selectedSession}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        onSelectForHire={handleSelectForHire}
         onShortlist={(session) => {
           if (!session.is_verified) {
             toast.error("This interview session has not been verified yet.");
@@ -733,6 +759,30 @@ export default function EmployerInterviewsPage() {
         onClose={handleCloseShortlist}
         onConfirm={handleShortlistConfirm}
       />
+
+      {/* Hire Offer Modal */}
+      {hireSession && (
+        <HireModal
+          isOpen={isHireModalOpen}
+          onClose={() => {
+            setIsHireModalOpen(false);
+            setHireSession(null);
+          }}
+          applicationId={
+            (hireSession.application_id as any)?._id ||
+            (typeof hireSession.application_id === "string" ? hireSession.application_id : "") ||
+            hireSession.match_id ||
+            hireSession._id
+          }
+          candidateName={
+            `${hireSession.profile_id?.first_name || ""} ${hireSession.profile_id?.last_name || ""}`.trim() || "Candidate"
+          }
+          jobTitle={hireSession.job_id?.title || ""}
+          onSuccess={() => {
+            fetchInterviewSessions();
+          }}
+        />
+      )}
     </div>
   );
 }
