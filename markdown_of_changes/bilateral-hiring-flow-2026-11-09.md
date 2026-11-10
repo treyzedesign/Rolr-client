@@ -189,3 +189,48 @@ fix(swipe): resolve Framer Motion controls.start unmounted error in swipe boards
 - Guard snap-back controls.start against unmounted component errors in drag end handler.
 - Apply matching defensive pattern to JobSwipeBoard.
 ```
+
+---
+
+### Update: Admin Bilateral Legal Contracts Resend UI & API Integration
+
+#### Date: 2026-11-10
+
+#### Summary
+Implemented the Admin UI and client integration for resending post-interview bilateral legal contracts (Client Services Agreement between Rolr and Employer; Contractor Agreement between Rolr and Job Seeker) against the backend endpoints. Added TypeScript definitions, API client wrapper functions, Zustand store actions with live state updates, and an interactive confirmation modal with scope selection (Both Agreements, Client Agreement Only, Contractor Agreement Only) and individual contract resend triggers in the Offer Detail Drawer.
+
+#### Modifications
+- `c:\Users\User\Desktop\workswipe_client\types\hiring.ts` (Lines 16-70):
+  - Added `ContractType` (`"client_agreement" | "contractor_agreement"`).
+  - Added `ContractSummary`, `ResendContractsPayload`, `ResendContractsResponse`.
+  - Enhanced `ContractReference` with `externalId` and `signedAt`.
+- `c:\Users\User\Desktop\workswipe_client\lib\api\hiring.ts` (Lines 1-15, 80-110, 135-155):
+  - Implemented `resendOfferContracts` calling `POST /admin/offers/:id/resend-contracts`.
+  - Implemented `resendContract` calling `POST /admin/contracts/:id/resend`.
+  - Exported standalone helper functions for direct import.
+- `c:\Users\User\Desktop\workswipe_client\stores\hiring-store.ts` (Lines 5-45, 275-410):
+  - Added `resendOfferContracts` and `resendContract` store actions.
+  - Implemented optimistic contract state merging to update `documensoDocumentId`, `externalId`, and `status` in `offers` and `selectedOffer` without full page reload.
+- `c:\Users\User\Desktop\workswipe_client\components\admin\OfferDetailDrawer.tsx` (Lines 1-480):
+  - Rendered **Live Bilateral Legal Agreements** card showing both Client and Contractor agreements with status badge, external reference, Documenso Document ID, signed timestamp, and Documenso link.
+  - Added individual "Resend" button next to each contract (disabled with indicator if already signed).
+  - Added primary "Resend Contracts" button in drawer footer and section header.
+  - Built interactive **Resend Contracts Confirmation Modal** with scope selection radio options, explaining invalidation of previous links and dispatch via Documenso.
+  - Automatically pre-selects unsigned contract and disables options for agreements that are already signed.
+- `c:\Users\User\Desktop\workswipe_client\app\admin\offers\page.tsx` (Lines 30-40, 285-295):
+  - Connected `currentOffer` memo to synchronize store updates directly into the audit drawer in real-time.
+
+#### Commit Draft - Short
+`feat(admin): add bilateral legal contracts resend UI and API integration`
+
+#### Commit Draft - Long
+```git
+feat(admin): add bilateral legal contracts resend UI and API integration
+
+- Add ContractSummary, ResendContractsPayload, and ResendContractsResponse types.
+- Add resendOfferContracts and resendContract API client endpoints and Zustand store actions.
+- Implement live bilateral contracts card in OfferDetailDrawer with status, ref, and Documenso IDs.
+- Add individual contract resend triggers and primary Resend Contracts action.
+- Add confirmation modal with scope selection (Both, Client only, Contractor only) and already-signed guards.
+- Sync updated contract states into AdminOffersPage in real-time without requiring page reload.
+```

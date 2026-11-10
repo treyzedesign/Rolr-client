@@ -35,6 +35,11 @@ export default function AdminOffersPage() {
     fetchOffers();
   }, [fetchOffers]);
 
+  const currentOffer = useMemo(() => {
+    if (!selectedOffer) return null;
+    return offers.find((o) => o._id === selectedOffer._id) || selectedOffer;
+  }, [offers, selectedOffer]);
+
   const filteredOffers = useMemo(() => {
     return offers.filter((offer) => {
       const employer = typeof offer.employerId === "object" ? offer.employerId : null;
@@ -282,7 +287,7 @@ export default function AdminOffersPage() {
 
       {/* Detail Audit Drawer */}
       <OfferDetailDrawer
-        offer={selectedOffer}
+        offer={currentOffer}
         isOpen={isDrawerOpen}
         onClose={() => {
           setIsDrawerOpen(false);

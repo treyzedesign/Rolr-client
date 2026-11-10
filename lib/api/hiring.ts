@@ -7,6 +7,9 @@ import type {
   Engagement,
   EngagementsResponse,
   EngagementResponse,
+  ContractSummary,
+  ResendContractsPayload,
+  ResendContractsResponse,
 } from "@/types/hiring";
 
 export interface GetOffersParams {
@@ -80,6 +83,26 @@ export const hiringApi = {
     return response.data;
   },
 
+  resendOfferContracts: async (
+    offerId: string,
+    payload?: ResendContractsPayload
+  ): Promise<ResendContractsResponse> => {
+    const response = await apiClient.post<ResendContractsResponse>(
+      `/admin/offers/${offerId}/resend-contracts`,
+      payload || { contractType: "both" }
+    );
+    return response.data;
+  },
+
+  resendContract: async (
+    contractId: string
+  ): Promise<{ message: string; contract: ContractSummary }> => {
+    const response = await apiClient.post<{ message: string; contract: ContractSummary }>(
+      `/admin/contracts/${contractId}/resend`
+    );
+    return response.data;
+  },
+
   // --- Shared / Role-Scoped Get Endpoints ---
   getOffers: async (params?: GetOffersParams): Promise<OffersResponse> => {
     const response = await apiClient.get<OffersResponse>("/offers", {
@@ -111,4 +134,17 @@ export const hiringApi = {
     return response.data;
   },
 };
+
+export async function resendOfferContracts(
+  offerId: string,
+  payload?: ResendContractsPayload
+): Promise<ResendContractsResponse> {
+  return hiringApi.resendOfferContracts(offerId, payload);
+}
+
+export async function resendContract(
+  contractId: string
+): Promise<{ message: string; contract: ContractSummary }> {
+  return hiringApi.resendContract(contractId);
+}
 

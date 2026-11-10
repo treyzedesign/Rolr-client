@@ -21,6 +21,8 @@ export type OfferStatus =
   | "declined"
   | "cancelled";
 
+export type ContractType = "client_agreement" | "contractor_agreement";
+
 export type ContractStatus =
   | "draft"
   | "sent"
@@ -52,10 +54,32 @@ export interface CreateHireOfferRequest {
 export interface ContractReference {
   _id?: string;
   id?: string;
-  type?: "client_agreement" | "contractor_agreement";
+  type?: ContractType;
   status: ContractStatus;
-  documentUrl?: string;
+  documentUrl?: string | null;
   documensoDocumentId?: string;
+  externalId?: string;
+  signedAt?: string | null;
+}
+
+export interface ContractSummary {
+  id: string;
+  type: ContractType;
+  documensoDocumentId: string;
+  externalId?: string;
+  status: ContractStatus;
+  signedAt?: string | null;
+  documentUrl?: string | null;
+}
+
+export interface ResendContractsPayload {
+  contractType?: "both" | "client_agreement" | "contractor_agreement";
+}
+
+export interface ResendContractsResponse {
+  message: string;
+  offer: Offer;
+  contracts: ContractSummary[];
 }
 
 export interface UserPartySummary {
